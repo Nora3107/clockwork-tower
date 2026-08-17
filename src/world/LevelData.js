@@ -254,6 +254,34 @@ class TowerBuilder {
     this.defs.push({ type: PlatformType.SLOPE, x1: gapHalf, y1: y, x2: HW, y2: y + rise, depth: 7, tag });
     return this;
   }
+
+  /**
+   * ỐNG TỤT — hai vách thẳng đứng ngay dưới khe hở của phễu.
+   *
+   *  VÌ SAO CẦN?  Người trượt hết mặt dốc lao ra khỏi khe với vận tốc ngang
+   *  rất lớn (40+ đơn vị/giây), đủ để bay vọt sang tận bên kia giếng và bám
+   *  được vào bậc thang phía đối diện — thế là cái bẫy mất tác dụng.
+   *  Hai vách này nhốt nạn nhân lại: va vào vách thì DỘI TƯỜNG, mất dần lực
+   *  ngang, và rơi thẳng một mạch xuống đáy giếng.
+   *
+   *  ⚠ Ống PHẢI rộng hơn khe hở, và PHẢI kết thúc cách bệ hứng một quãng để
+   *    người chơi còn bước ra ngoài được (nếu không sẽ bị nhốt trong ống).
+   *
+   * @param {object} o { yFrom, yTo, halfWidth (mặt trong), thickness, tag }
+   */
+  throat(o) {
+    const t = o.thickness ?? 1.5;
+    const h = o.yTo - o.yFrom;
+    for (const s of [-1, 1]) {
+      this.defs.push({
+        type: PlatformType.STATIC,
+        x: s * (o.halfWidth + t / 2),
+        y: (o.yFrom + o.yTo) / 2,
+        w: t, h, tag: o.tag,
+      });
+    }
+    return this;
+  }
 }
 
 // ============================================================================
@@ -284,22 +312,38 @@ function buildForest(b) {
   //     phễu rơi xuống. Nhìn thấy nó lần thứ hai nghĩa là bạn vừa mất 100 mét.
   b.box({ x: 0, y: 118, w: 18, h: 2.5, tag: 'funnel-1-landing' });
 
-  // --- 4.6 Giếng rơi: bám vách trái leo lên, chừa trống cột x ∈ [-6, 6] -----
+  // --- 4.6 Giếng rơi: bám vách trái leo lên, chừa trống cột x ∈ [-8, 8] -----
+  //     ⚠ minAbsCenter PHẢI lớn hơn `gapHalf` của phễu ít nhất một nửa bề ngang
+  //       nhân vật (1.4), nếu không người rơi qua khe sẽ mắc vào mép bục và
+  //       cái bẫy mất tác dụng. Ở đây gapHalf = 5 → chọn 8 cho dư dả.
   b.ladder({
-    toY: 204, step: [8, 10], width: [9, 13], center: [10, 19],
-    mode: 'wall', side: -1, minAbsCenter: 6, tag: 'z1-shaft',
+    toY: 188, step: [8, 10], width: [9, 13], center: [10, 19],
+    mode: 'wall', side: -1, minAbsCenter: 8, tag: 'z1-shaft',
   });
+
+  // --- 4.6b Bậc chờ ngay dưới chân phễu ------------------------------------
+  const a1 = { type: PlatformType.STATIC, w: 9, h: 2, x: -15, y: 200, tag: 'z1-shaft' };
+  b.fitIntoReach(a1, SAFE_COST, 8, -1);
+  b.box(a1);
 
   // --- 4.7 ☠ PHỄU TỬ THẦN #1 @ Y214 ----------------------------------------
   //     Hai vách dốc 32° chụm vào khe rộng 10 đơn vị.
   //     Trượt chân ở tầng trên → bị dồn vào khe → rơi thẳng về bệ hứng Y118.
   //     Mất trắng ~95 đơn vị độ cao (khoảng 11 bậc thang).
   b.funnel({ y: 214, gapHalf: 5, rise: 12, tag: 'funnel-1' });
+  b.throat({ yFrom: 148, yTo: 213, halfWidth: 5.75, tag: 'funnel-1' });
 
-  // --- 4.8 Cửa thoát: mỏm nhỏ ngay trên miệng khe --------------------------
-  //     Đây là con đường DUY NHẤT đi lên: chui qua khe rồi bám lấy mỏm này.
-  b.box({ x: -3, y: 216, w: 6, h: 2, tag: 'funnel-1-lip' });
-  b.box({ x: 7, y: 226, w: 9, h: 2, tag: 'funnel-1-lip' });
+  // --- 4.8 ĐƯỜNG SỐNG QUA PHỄU --------------------------------------------
+  //  Ba bậc, và cả ba đều KHÔNG được chắn ngang khe hở (nếu chắn thì cái bẫy
+  //  mất tác dụng — người rơi sẽ đáp lên chính bậc cứu hộ của mình).
+  //    b1 "hang trú" : nằm LỌT DƯỚI bụng mặt dốc — mép trên phải thấp hơn mặt
+  //                    dốc ít nhất 3.2 đơn vị (chiều cao nhân vật) để không kẹt.
+  //    e1 "mỏm treo" : nằm TRÊN mặt dốc — mép dưới phải cao hơn đầu của một
+  //                    người đang trượt trên dốc, nếu không nó sẽ chặn cú trượt.
+  //    c1            : bậc thoát cuối, đã ra khỏi hẳn vùng phễu.
+  b.box({ x: -12, y: 211, w: 6, h: 2, tag: 'funnel-1-cave' });
+  b.box({ x: -8, y: 223, w: 6, h: 2, tag: 'funnel-1-lip' });
+  b.box({ x: -6, y: 233, w: 7, h: 2, tag: 'funnel-1-lip' });
 
   // --- 4.9 Qua phễu: nhịp nhanh dần, băng bắt đầu xuất hiện -----------------
   b.ladder({ toY: 296, step: [7.5, 10], width: [9, 14], center: [8, 15], tag: 'z1-upper' });
@@ -337,6 +381,13 @@ function buildIce(b) {
 
   // --- 5.4 ⛺ TRẠM NGHỈ AN TOÀN @ Y500 -------------------------------------
   //     Bục đá rộng, KHÔNG trơn. Chỗ duy nhất trong vùng được thở.
+  //     Bậc đệm phía dưới đảm bảo trạm nghỉ luôn với tới được dù đoạn "mỏm băng
+  //     li ti" phía trên kết thúc ở đâu (vị trí bục do hạt giống ngẫu nhiên quyết định).
+  const side = b.prev.x > 0 ? 1 : -1;
+  const approach = { type: PlatformType.ICE, w: 8, h: 2, x: side * 11, y: 492, tag: 'z2-approach' };
+  b.fitIntoReach(approach, HARD_COST, 0, side);
+  b.box(approach);
+
   b.box({ x: 0, y: 500, w: 24, h: 3, type: PlatformType.STATIC, tag: 'rest-station' });
   b.free({ x: -19, y: 509, w: 9, h: 2, tag: 'rest-shelf' });
   b.free({ x: 19, y: 509, w: 9, h: 2, tag: 'rest-shelf' });
@@ -375,14 +426,14 @@ function buildCore(b) {
   // --- 6.1 Cửa vào lõi tháp: bám vách phải ---------------------------------
   b.ladder({
     toY: 716, step: [8, 10], width: [9, 13], center: [10, 19],
-    mode: 'wall', side: 1, minAbsCenter: 5,
+    mode: 'wall', side: 1, minAbsCenter: 7,
     types: [[PlatformType.STATIC, 5], [PlatformType.MOVING, 5]], tag: 'z3-conveyor',
   });
 
   // --- 6.2 Sàn nứt: đứng quá 1.5 giây là sập ------------------------------
   b.ladder({
     toY: 786, step: [8, 10], width: [8, 12], center: [10, 19],
-    mode: 'wall', side: 1, minAbsCenter: 5,
+    mode: 'wall', side: 1, minAbsCenter: 7,
     types: [[PlatformType.FALLING, 5], [PlatformType.STATIC, 3], [PlatformType.MOVING, 2]],
     tag: 'z3-crumble',
   });
@@ -393,21 +444,31 @@ function buildCore(b) {
 
   // --- 6.4 Leo lên miệng Siêu Phễu ----------------------------------------
   b.ladder({
-    toY: 870, step: [8, 10], width: [8, 12], center: [10, 19],
-    mode: 'wall', side: 1, minAbsCenter: 5,
+    toY: 855, step: [8, 10], width: [8, 12], center: [10, 19],
+    mode: 'wall', side: 1, minAbsCenter: 7,
     types: [[PlatformType.STATIC, 5], [PlatformType.MOVING, 3], [PlatformType.FALLING, 2]],
     budget: HARD_COST, tag: 'z3-ascent',
   });
+
+  // Bậc chờ cuối cùng trước Siêu Phễu — bục TĨNH, để người chơi được lấy đà
+  // trên một mặt phẳng chắc chắn thay vì trên băng chuyền đang trôi.
+  const a2 = { type: PlatformType.STATIC, w: 9, h: 2, x: 14, y: 867, tag: 'z3-ascent' };
+  b.fitIntoReach(a2, SAFE_COST, 7, 1);
+  b.box(a2);
 
   // --- 6.5 ☠☠ SIÊU PHỄU TỬ THẦN #2 @ Y880 ---------------------------------
   //     Dốc 39° (gắt hơn phễu #1 nhiều), khe hở chỉ rộng 8 đơn vị.
   //     Ngã ở đây = rơi thẳng 250 đơn vị về lại Hầm Băng Giá.
   //     Đặt ngay sát vạch đích — đúng chỗ tim người chơi đập nhanh nhất.
   b.funnel({ y: 880, gapHalf: 4, rise: 16, tag: 'funnel-2' });
+  b.throat({ yFrom: 658, yTo: 879, halfWidth: 4.75, tag: 'funnel-2' });
 
-  // --- 6.6 Cửa thoát của Siêu Phễu: hai mỏm bé xíu ------------------------
-  b.box({ x: -2.5, y: 882, w: 5.5, h: 2, tag: 'funnel-2-lip' });
-  b.box({ x: 6, y: 892, w: 8, h: 2, tag: 'funnel-2-lip' });
+  // --- 6.6 ĐƯỜNG SỐNG QUA SIÊU PHỄU ---------------------------------------
+  //  Cùng công thức ba bậc như Phễu #1 (xem chú thích ở phần [4]), nhưng khe
+  //  hẹp hơn và dốc gắt hơn nên dung sai mỏng hơn hẳn.
+  b.box({ x: 12, y: 878, w: 6, h: 2, tag: 'funnel-2-cave' });
+  b.box({ x: 7, y: 890, w: 5, h: 2, tag: 'funnel-2-lip' });
+  b.box({ x: 7, y: 900, w: 7, h: 2, tag: 'funnel-2-lip' });
 
   // --- 6.7 Chặng cuối: tổng hợp mọi thứ đã học ----------------------------
   b.ladder({
@@ -461,8 +522,9 @@ export function buildLevelData(seed = SEED) {
 //  Chạy tự động ở chế độ dev (npm run dev), im lặng ở bản build.
 // ============================================================================
 export function validateLevel(seed = SEED) {
-  const chain = build(seed).chain;
-  const issues = [];
+  const b = build(seed);
+  const chain = b.chain;
+  const issues = [...checkFunnels(b.defs)];
   let hardest = { cost: 0, from: null, to: null };
 
   for (let i = 1; i < chain.length; i++) {
@@ -490,4 +552,82 @@ export function validateLevel(seed = SEED) {
   }
 
   return { total: chain.length, issues, hardest, maxCost: MAX_COST };
+}
+
+// ============================================================================
+//  KIỂM TRA HÌNH HỌC PHỄU TỬ THẦN
+// ----------------------------------------------------------------------------
+//  Hai lỗi rất dễ mắc khi chỉnh map mà mắt thường không thấy:
+//    (1) Đặt một bục CHẮN NGANG khe hở → không ai rơi lọt được nữa, cái bẫy
+//        đắt giá nhất của game trở thành vô dụng.
+//    (2) Đặt một bục THÒ VÀO ĐƯỜNG TRƯỢT trên mặt dốc → người chơi đang trượt
+//        bị chặn đứng giữa dốc, đứng chôn chân ở đó mãi mãi.
+//  Hàm này mô phỏng hình học để bắt cả hai lỗi trước khi bạn kịp mở game.
+// ============================================================================
+function checkFunnels(defs) {
+  const issues = [];
+  const slopes = defs.filter((d) => d.type === PlatformType.SLOPE);
+  const boxes = defs.filter((d) => d.type !== PlatformType.SLOPE);
+  const H = PLAYER.HEIGHT;
+
+  // --- (1) Khe hở còn lọt người không? -------------------------------------
+  const tags = [...new Set(slopes.map((s) => s.tag))];
+  for (const tag of tags) {
+    const pair = slopes.filter((s) => s.tag === tag);
+    if (pair.length < 2) continue;
+    // Khe hở nằm giữa hai mép trong của hai mặt dốc.
+    const gapL = Math.max(...pair.map((s) => (s.x2 < 0 ? s.x2 : -Infinity)));
+    const gapR = Math.min(...pair.map((s) => (s.x1 > 0 ? s.x1 : Infinity)));
+    if (!isFinite(gapL) || !isFinite(gapR)) continue;
+    const gapY = Math.min(...pair.map((s) => Math.min(s.y1, s.y2)));
+    // Chỉ những bục nằm trong "miệng phễu" (từ khe lên tới mép ngoài cao nhất)
+    // mới thực sự bịt đường rơi; cao hơn nữa thì người chơi vẫn né được.
+    const mouthTop = Math.max(...pair.map((s) => Math.max(s.y1, s.y2))) + 8;
+
+    // Quét từng vị trí đứng có thể có trong khe, xem có lối rơi lọt nào không.
+    let widest = 0; let run = 0;
+    for (let x = gapL + PHW; x <= gapR - PHW; x += 0.1) {
+      const blocked = boxes.some((d) => {
+        const bTop = d.y + d.h / 2;
+        if (bTop < gapY - 2 || bTop > mouthTop) return false;    // ngoài vùng miệng phễu
+        return x + PHW > d.x - d.w / 2 && x - PHW < d.x + d.w / 2;
+      });
+      run = blocked ? 0 : run + 0.1;
+      if (run > widest) widest = run;
+    }
+    if (widest < 0.5) {
+      issues.push({ level: 'error', message: `Phe "${tag}": khe ho bi CHAN HOAN TOAN - cai bay vo dung` });
+    } else if (widest < 2) {
+      issues.push({ level: 'warn', message: `Phe "${tag}": loi roi chi con rong ${widest.toFixed(1)} don vi` });
+    }
+  }
+
+  // --- (2) Có bục nào thò vào đường trượt trên mặt dốc không? --------------
+  for (const s of slopes) {
+    const m = (s.y2 - s.y1) / (s.x2 - s.x1);
+    for (const d of boxes) {
+      const bl = d.x - d.w / 2; const br = d.x + d.w / 2;
+      const bTop = d.y + d.h / 2; const bBot = d.y - d.h / 2;
+      // Nới rộng vùng quét thêm nửa bề ngang nhân vật ở hai đầu: cú chặn hay
+      // xảy ra nhất là khi người trượt đâm vào MẶT BÊN của bục, tại vị trí
+      // nằm ngay ngoài rìa bục chứ không phải bên trong nó.
+      const from = Math.max(s.x1, bl - PHW); const to = Math.min(s.x2, br + PHW);
+      if (from >= to) continue;
+
+      for (let x = from; x <= to; x += 0.5) {
+        const surf = s.y1 + (x - s.x1) * m;
+        // Thân người đang trượt chiếm khoảng [surf, surf + H].
+        if (bBot < surf + H && bTop > surf + 0.05) {
+          issues.push({
+            level: 'error',
+            message: `Buc tai (x=${d.x.toFixed(1)}, y=${d.y.toFixed(1)}) CHAN DUONG TRUOT `
+              + `cua mat doc "${s.tag}" tai x=${x.toFixed(1)}`,
+          });
+          break;
+        }
+      }
+    }
+  }
+
+  return issues;
 }

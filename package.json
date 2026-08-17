@@ -1,8 +1,9 @@
 {
-  "name": "game-jumpking",
-  "version": "0.0.0",
+  "name": "clockwork-tower",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
+  "description": "The Clockwork Tower - hardcore precision platformer leo thap (Three.js + custom 2D physics)",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -12,7 +13,6 @@
     "vite": "^8.2.0"
   },
   "dependencies": {
-    "cannon-es": "^0.20.0",
     "three": "^0.185.1"
   }
 }

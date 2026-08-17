@@ -38,8 +38,13 @@ export const WORLD = {
   /** Độ dày tường biên hai bên (chỉ để vẽ, va chạm dùng HALF_WIDTH). */
   WALL_THICKNESS: 6,
 
-  /** Chân tháp — nơi nhân vật hồi sinh khi bấm R. */
-  SPAWN: { x: -15, y: 6 },
+  /**
+   * Chân tháp — nơi nhân vật hồi sinh khi bấm R.
+   * y = 1.7 để chân robot đứng SẴN trên mặt sàn (sàn cao 0, robot cao 3.2 nên
+   * tâm phải ở 1.6). Đặt cao hơn sẽ khiến người chơi rơi mất một nhịp lúc vào
+   * game và không gồng lực được ngay.
+   */
+  SPAWN: { x: -15, y: 1.7 },
 
   /** Độ cao của Cỗ Máy Thời Gian. Chạm tới đây là thắng. */
   GOAL_Y: 1050,
