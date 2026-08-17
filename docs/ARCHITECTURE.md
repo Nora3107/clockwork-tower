@@ -83,6 +83,8 @@ requestAnimationFrame
 | Muốn chỉnh                             | Mở file                    | Phần   |
 | -------------------------------------- | -------------------------- | ------ |
 | Lực nhảy, trọng lực, tốc độ rơi tối đa | `core/Config.js`           | [2]    |
+| Bố cục tháp giãn rộng/thu hẹp          | `core/Config.js`           | [2b]   |
+| Ngưỡng FPS, các mức đồ hoạ             | `core/Config.js`           | [7b]   |
 | Hồi chiêu dash, lực dash               | `core/Config.js`           | [3]    |
 | Độ nảy tường, ma sát, ma sát băng      | `core/Config.js`           | [4]    |
 | Vị trí từng bục nhảy                   | `world/LevelData.js`       | [3–6]  |
@@ -93,7 +95,26 @@ requestAnimationFrame
 | Bố cục HUD                             | `ui/HUD.js` + `style.css`  | —      |
 | Hình dáng chú robot                    | `entities/PlayerView.js`   | [2]    |
 
-## 6. Ba cái bẫy hình học của Phễu Tử Thần (đọc trước khi sửa map quanh phễu)
+## 6. Luật hiệu năng: ĐẾM LỆNH VẼ, KHÔNG ĐẾM TAM GIÁC
+
+Cả toà tháp chỉ có ~5300 tam giác — con số mà mọi card đồ hoạ đều coi là không có gì.
+Thứ giết hiệu năng ở đây là **số lệnh vẽ**: mỗi mesh trong cảnh là một lần CPU phải
+nói chuyện với GPU. Bản dựng đầu tiên có 529 mesh → ~190 lệnh vẽ → 16 fps.
+
+Ba cái bẫy đã gặp, và cách tránh:
+
+| Bẫy | Hậu quả | Cách đúng |
+| --- | --- | --- |
+| Mỗi chi tiết một mesh (răng cưa bánh răng, tay chân robot) | 370 mesh chỉ riêng hậu cảnh | Gộp thành 1 khối lúc khởi tạo — `render/MergeUtils.js` |
+| Truyền **mảng 6 vật liệu** cho `BoxGeometry` để mặt trên khác màu | three.js vẽ mỗi nhóm vật liệu bằng một lệnh riêng → **6 lệnh cho một cái bục** | Nhét màu vào từng đỉnh (`coloredBox`), dùng chung một vật liệu |
+| Gộp tất cả thành **một** khối khổng lồ | Không bao giờ bị loại khỏi khung hình → GPU xử lý cả tháp ở mọi khung hình | Gộp theo **tầng cao 150 đơn vị** (`Level.js`, hằng số `CHUNK_H`) |
+
+Kết quả: 50 mesh, 18–35 lệnh vẽ tuỳ độ cao.
+
+**Quy tắc khi thêm thứ mới vào cảnh:** nếu nó không tự cử động → gộp vào khối tĩnh
+của tầng. Nếu nó cử động → mesh riêng, nhưng phải dùng **một** vật liệu duy nhất.
+
+## 7. Ba cái bẫy hình học của Phễu Tử Thần (đọc trước khi sửa map quanh phễu)
 
 Phễu chỉ hoạt động khi ba điều kiện dưới đây cùng đúng. `validateLevel()` kiểm
 tra tự động cả ba, nhưng hiểu nguyên nhân vẫn tốt hơn là chờ nó báo lỗi.

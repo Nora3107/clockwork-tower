@@ -35,6 +35,7 @@ export class HUD {
         <div class="hud-timer" id="hud-timer">00:00.000</div>
         <div class="hud-row"><span class="hud-label">KỶ LỤC</span><span id="hud-best">--:--.---</span></div>
         <div class="hud-row"><span class="hud-label">ĐỘ CAO</span><span id="hud-height">0 m</span></div>
+        <div class="hud-row"><span class="hud-label">FPS</span><span id="hud-fps">--</span></div>
       </div>
 
       <!-- Góc trên phải: tên vùng sinh thái đang ở -->
@@ -76,6 +77,7 @@ export class HUD {
     this.bestEl = this.el.querySelector('#hud-best');
     this.heightEl = this.el.querySelector('#hud-height');
     this.zoneEl = this.el.querySelector('#hud-zone');
+    this.fpsEl = this.el.querySelector('#hud-fps');
     this.flagsEl = this.el.querySelector('#hud-flags');
     this.powerFill = this.el.querySelector('#hud-power-fill');
     this.dashCd = this.el.querySelector('#hud-skill-dash-cd');
@@ -131,8 +133,9 @@ export class HUD {
    * @param {Player} p
    * @param {number} elapsed thời gian đã trôi của lần chơi này (giây)
    * @param {number} dt
+   * @param {{fps:number, quality:string}} perf số liệu hiệu năng từ Stage
    */
-  update(p, elapsed, dt) {
+  update(p, elapsed, dt, perf) {
     // --- Đồng hồ ------------------------------------------------------------
     const txt = formatTime(elapsed);
     if (txt !== this._lastTimer) { this.timerEl.textContent = txt; this._lastTimer = txt; }
@@ -144,6 +147,18 @@ export class HUD {
     // --- Vùng sinh thái -----------------------------------------------------
     const zone = zoneNameAt(p.y);
     if (zone !== this._lastZone) { this.zoneEl.textContent = zone; this._lastZone = zone; }
+
+    // --- FPS + mức đồ hoạ ---------------------------------------------------
+    //  Hiển thị thẳng ra màn hình để người chơi (và người sửa code) biết ngay
+    //  máy có tải nổi không, thay vì phải mở công cụ đo của trình duyệt.
+    if (perf) {
+      const fpsTxt = `${Math.round(perf.fps)} · ${perf.quality}`;
+      if (fpsTxt !== this._lastFps) {
+        this.fpsEl.textContent = fpsTxt;
+        this.fpsEl.style.color = perf.fps < 40 ? '#ff5a3c' : perf.fps < 55 ? '#ffd85e' : '#5cff8f';
+        this._lastFps = fpsTxt;
+      }
+    }
 
     // --- [3] Thanh lực ------------------------------------------------------
     this.powerFill.style.width = `${p.power * 100}%`;

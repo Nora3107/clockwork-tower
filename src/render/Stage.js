@@ -16,15 +16,17 @@
  *    [6] setZoneMood() — đổi tông màu nền/sương theo vùng sinh thái
  *    [7] worldFromMouse() — đổi toạ độ chuột thành toạ độ thế giới (để ngắm)
  *    [8] resize() / render()
+ *    [9] HỆ TỰ ĐIỀU CHỈNH CHẤT LƯỢNG — đo FPS và hạ dần khi máy đuối
  *
  *  CHỈNH Ở ĐÂU?
  *    • Độ zoom, góc nghiêng, độ trễ bám → core/Config.js phần [5] CAMERA
+ *    • Ngưỡng FPS, các mức chất lượng   → core/Config.js phần [7b] PERF
  *    • Màu nắng, cường độ bóng          → hằng số ngay trong phần [3]
  * ============================================================================
  */
 
 import * as THREE from 'three';
-import { CAMERA, WORLD, ZONES } from '../core/Config.js';
+import { CAMERA, WORLD, ZONES, PERF } from '../core/Config.js';
 
 const DEG = Math.PI / 180;
 /** Vùng bóng đổ chỉ bao quanh người chơi — nếu phủ cả tháp thì bóng sẽ vỡ hạt. */
@@ -35,10 +37,11 @@ export class Stage {
   // [1] KHỞI TẠO
   // ==========================================================================
   constructor(container) {
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // Khử răng cưa rất tốn ở màn hình mật độ điểm ảnh cao, mà ở đó nó cũng gần
+    // như không cần thiết → chỉ bật khi màn hình có mật độ thường.
+    const wantAA = window.devicePixelRatio <= 1.25;
+    this.renderer = new THREE.WebGLRenderer({ antialias: wantAA, powerPreference: 'high-performance' });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.shadowMap.enabled = true;
     // PCFSoftShadowMap đã bị three.js khai tử từ r18x; PCFShadowMap là bản
     // được khuyến nghị thay thế, nhẹ hơn và không sinh cảnh báo.
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -47,7 +50,10 @@ export class Stage {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(ZONES[0].sky);
     // Sương mù ăn theo KHOẢNG CÁCH TỚI CAMERA → hậu cảnh sâu sẽ mờ dần đi.
-    this.scene.fog = new THREE.Fog(ZONES[0].fog, CAMERA.DISTANCE * 0.55, CAMERA.DISTANCE * 2.1);
+    // Mốc gần đặt SÁT mặt phẳng chơi (z=0, cách camera đúng CAMERA.DISTANCE)
+    // để bục nhảy gần như không bị sương làm bạc màu — người chơi phải đọc
+    // được mép bục thật rõ. Chỉ hậu cảnh sâu phía sau mới chìm dần vào sương.
+    this.scene.fog = new THREE.Fog(ZONES[0].fog, CAMERA.DISTANCE * 0.92, CAMERA.DISTANCE * 2.1);
 
     this.buildCamera();
     this.buildLights();
@@ -62,6 +68,14 @@ export class Stage {
     this.aimPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);   // mặt phẳng z = 0
     this._hit = new THREE.Vector3();
     this._ndc = new THREE.Vector2();
+
+    // --- Hệ tự điều chỉnh chất lượng (xem phần [9]) --------------------------
+    this.quality = PERF.LEVELS.length - 1;   // khởi động ở mức cao nhất
+    this.fps = 60;
+    this._frames = 0;
+    this._sampleTime = 0;
+    this._badStreak = 0;
+    this.applyQuality();
 
     this.resize();
     window.addEventListener('resize', () => this.resize());
@@ -90,7 +104,9 @@ export class Stage {
     this.scene.add(this.ambient);
 
     // Nắng hoàng hôn: hắt chéo từ trái xuống → bóng đổ dài về bên phải bục.
-    this.sun = new THREE.DirectionalLight(0xffa366, 1.55);
+    // Màu cam nhạt chứ không cam gắt: cam quá đậm sẽ "giết" hết tông xanh của
+    // Hầm Băng Giá, làm ba vùng sinh thái trông na ná nhau.
+    this.sun = new THREE.DirectionalLight(0xffc78f, 2.3);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(1024, 1024);
     this.sun.shadow.camera.left = -SHADOW_SPAN;
@@ -214,4 +230,78 @@ export class Stage {
   render() {
     this.renderer.render(this.scene, this.camera);
   }
+
+  // ==========================================================================
+  // [9] HỆ TỰ ĐIỀU CHỈNH CHẤT LƯỢNG
+  // ----------------------------------------------------------------------------
+  //  Đây là game đòi độ chính xác từng khung hình: giật hình nghĩa là người
+  //  chơi chết oan. Nên thay vì bắt họ mò vào cài đặt, sân khấu tự đo FPS và
+  //  hạ chất lượng khi thấy máy đuối — hạ dần từng nấc, và chỉ hạ khi tệ liên
+  //  tục nhiều lần đo, để một cú khựng nhất thời không làm mất bóng đổ oan.
+  //
+  //  Thứ tự hy sinh: độ phân giải trước → bóng đổ sau. Vì bóng đổ chính là
+  //  thứ giúp người chơi đoán được mình đang ở trên hay dưới một cái bục.
+  // ==========================================================================
+
+  /** Gọi mỗi frame. Trả về true nếu vừa có thay đổi mức chất lượng. */
+  measurePerformance(dt) {
+    this._frames++;
+    this._sampleTime += dt;
+    if (this._sampleTime < PERF.SAMPLE_WINDOW) return false;
+
+    this.fps = this._frames / this._sampleTime;
+    this._frames = 0;
+    this._sampleTime = 0;
+
+    if (this.fps < PERF.DOWNGRADE_FPS) {
+      this._badStreak++;
+      if (this._badStreak >= PERF.DOWNGRADE_STREAK && this.quality > 0) {
+        this._badStreak = 0;
+        this.quality--;
+        this.applyQuality();
+        return true;
+      }
+    } else {
+      this._badStreak = 0;
+    }
+    return false;
+  }
+
+  /** Đổi mức bằng tay (phím P): Thấp → Vừa → Cao → Thấp… */
+  cycleQuality() {
+    this.quality = (this.quality + 1) % PERF.LEVELS.length;
+    this._badStreak = 0;
+    this.applyQuality();
+    return this.qualityName;
+  }
+
+  get qualityName() { return PERF.LEVELS[this.quality].name; }
+
+  applyQuality() {
+    const q = PERF.LEVELS[this.quality];
+
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, q.pixelRatio, PERF.MAX_PIXEL_RATIO));
+    this.renderer.shadowMap.enabled = q.shadows;
+    this.sun.castShadow = q.shadows;
+
+    if (this.sun.shadow.mapSize.width !== q.shadowMap) {
+      this.sun.shadow.mapSize.set(q.shadowMap, q.shadowMap);
+      // Bản đồ bóng cũ phải được huỷ thì kích thước mới mới có hiệu lực.
+      if (this.sun.shadow.map) {
+        this.sun.shadow.map.dispose();
+        this.sun.shadow.map = null;
+      }
+    }
+    // Đổi bật/tắt bóng đổ buộc three.js biên dịch lại shader của mọi vật liệu.
+    this.scene.traverse((o) => { if (o.isMesh) applyMaterialUpdate(o); });
+
+    if (this.pixelsPerUnit) this.resize();
+  }
+}
+
+/** Đánh dấu vật liệu cần biên dịch lại (dùng khi bật/tắt bóng đổ). */
+function applyMaterialUpdate(mesh) {
+  const m = mesh.material;
+  if (Array.isArray(m)) m.forEach((x) => { x.needsUpdate = true; });
+  else if (m) m.needsUpdate = true;
 }

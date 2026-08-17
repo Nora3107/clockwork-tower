@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ============================================================================
  *  Config.js — TOÀN BỘ SỐ LIỆU CÂN BẰNG CỦA GAME NẰM Ở ĐÂY
  * ============================================================================
@@ -6,14 +6,16 @@
  *  Không có con số gameplay nào được phép hard-code ở nơi khác.
  *
  *  MỤC LỤC
- *    [1] WORLD      — kích thước tháp, mốc độ cao, điểm hồi sinh
- *    [2] PLAYER     — kích thước, trọng lực, lực nhảy, gồng lực
- *    [3] SKILLS     — Dash (E), Air Brake (Q), God Mode (G)
- *    [4] COLLISION  — ma sát, dội tường, va trần, bục nảy, bục rơi
- *    [5] CAMERA     — góc nhìn 2.5D, bám nhân vật, rung màn hình
- *    [6] ZONES      — 3 vùng sinh thái + bảng màu từng vùng
- *    [7] FX         — hạt, parallax, âm lượng
- *    [8] KEYS       — bảng ánh xạ phím
+ *    [1]  WORLD        — kích thước tháp, mốc độ cao, điểm hồi sinh
+ *    [2]  PLAYER       — kích thước, trọng lực, lực nhảy, gồng lực
+ *    [2b] LEVEL_DESIGN — thước đo mà bản đồ được vẽ theo (tách khỏi lực nhảy thật)
+ *    [3]  SKILLS       — Dash (E), Air Brake (Q), God Mode (G)
+ *    [4]  COLLISION    — ma sát, dội tường, va trần, bục nảy, bục rơi
+ *    [5]  CAMERA       — góc nhìn 2.5D, bám nhân vật, rung màn hình
+ *    [6]  ZONES        — 3 vùng sinh thái + bảng màu từng vùng
+ *    [7]  FX           — hạt, parallax, âm lượng
+ *    [7b] PERF         — hệ tự hạ chất lượng đồ hoạ theo sức máy
+ *    [8]  KEYS         — bảng ánh xạ phím
  *
  *  ĐƠN VỊ
  *    • Khoảng cách: "đơn vị thế giới" (nhân vật cao 3.2 đơn vị)
@@ -81,11 +83,14 @@ export const PLAYER = {
 
   /**
    * Lực nhảy khi thanh lực đầy (power = 1).
-   *  • Nhảy thẳng đứng full lực: cao 58²/(2·120) ≈ 14.0 đơn vị (~4.4 lần chiều cao robot)
-   *  • Nhảy xa nhất (góc 45°):   xa 58²/120     ≈ 28.0 đơn vị
-   * ⚠ Tăng số này là làm cả map dễ đi rất nhiều. Xem ràng buộc ở WORLD.HALF_WIDTH.
+   *  • Nhảy thẳng đứng full lực: cao 62²/(2·120) ≈ 16.0 đơn vị (~5 lần chiều cao robot)
+   *  • Nhảy xa nhất (góc 45°):   xa 62²/120     ≈ 32.0 đơn vị
+   *
+   * ⚠ Con số này KHÔNG còn quyết định bố cục map nữa — xem LEVEL_DESIGN ngay
+   *   dưới đây. Nhờ tách đôi như vậy, tăng lực nhảy chỉ làm người chơi khoẻ
+   *   hơn chứ không sinh lại một toà tháp khác.
    */
-  MAX_JUMP_SPEED: 58,
+  MAX_JUMP_SPEED: 62,
 
   /** Thời gian để thanh lực chạy từ 0 lên 1. Sau đó tự dao động ngược về 0 rồi lặp lại. */
   CHARGE_TIME: 0.85,
@@ -106,6 +111,26 @@ export const PLAYER = {
   STRETCH_MAX: 1.35,
   /** Tốc độ nội suy co giãn về trạng thái mục tiêu (càng cao càng giật). */
   SQUASH_LERP: 14,
+};
+
+// ============================================================================
+// [2b] LEVEL_DESIGN — "Thước đo" mà bản đồ được vẽ theo
+// ----------------------------------------------------------------------------
+//  VÌ SAO TÁCH RA KHỎI PLAYER.MAX_JUMP_SPEED?
+//    world/LevelData.js đặt bục dựa trên tầm với tối đa của một cú nhảy. Nếu
+//    nó đọc thẳng PLAYER.MAX_JUMP_SPEED thì mỗi lần chỉnh lực nhảy là cả toà
+//    tháp tự giãn ra theo — người chơi khoẻ hơn nhưng khoảng cách cũng xa hơn,
+//    độ khó cảm nhận KHÔNG hề đổi. Vô nghĩa.
+//
+//    Tách ra rồi thì:
+//      • JUMP_SPEED dưới đây giữ nguyên  → bố cục tháp đứng yên
+//      • PLAYER.MAX_JUMP_SPEED tăng lên  → mọi cú nhảy dư dả hơn, game dễ thở hơn
+//
+//    Hiện tại: map vẽ theo lực 58, người chơi có lực 62 → dư ~14% biên an toàn.
+//    Muốn map giãn ra thật sự (thiết kế lại tháp) thì mới sửa số dưới đây.
+// ============================================================================
+export const LEVEL_DESIGN = {
+  JUMP_SPEED: 58,
 };
 
 // ============================================================================
@@ -228,7 +253,7 @@ export const ZONES = [
     platform: '#4e7a3a',   // thân bục
     platformTop: '#8fce5f',// mặt trên bục (nơi tiếp đất)
     accent: '#c9f27a',
-    ambient: 0.36,
+    ambient: 0.62,
   },
   {
     id: 'ice',
@@ -240,7 +265,7 @@ export const ZONES = [
     platform: '#3f7096',
     platformTop: '#9fdcf5',
     accent: '#bff2ff',
-    ambient: 0.44,
+    ambient: 0.68,
   },
   {
     id: 'core',
@@ -252,7 +277,7 @@ export const ZONES = [
     platform: '#8a5a2a',
     platformTop: '#e8a45c',
     accent: '#ffb457',
-    ambient: 0.4,
+    ambient: 0.64,
   },
   {
     id: 'summit',
@@ -264,7 +289,7 @@ export const ZONES = [
     platform: '#b8892f',
     platformTop: '#ffd85e',
     accent: '#fff3b0',
-    ambient: 0.7,
+    ambient: 0.95,
   },
 ];
 
@@ -293,7 +318,12 @@ export const FX = {
   /** Tổng số hạt tối đa tồn tại cùng lúc (giới hạn hiệu năng). */
   MAX_PARTICLES: 700,
 
-  /** Hậu cảnh bánh răng: [chiều sâu z, bán kính, tốc độ quay rad/s, hệ số parallax] */
+  /**
+   * Hậu cảnh bánh răng: [chiều sâu z, bán kính, tốc độ quay rad/s, hệ số parallax].
+   * Mỗi bánh răng được GỘP thành một khối hình học duy nhất lúc khởi tạo
+   * (xem render/Parallax.js), nên số răng cưa gần như không ảnh hưởng hiệu năng.
+   * Tổng số lệnh vẽ hậu cảnh = GEARS.length × GEAR_ROWS.
+   */
   GEARS: [
     { z: -120, radius: 46, speed: 0.10, parallax: 0.10, teeth: 18 },
     { z: -90, radius: 30, speed: -0.17, parallax: 0.18, teeth: 14 },
@@ -301,7 +331,7 @@ export const FX = {
     { z: -45, radius: 12, speed: -0.40, parallax: 0.40, teeth: 10 },
   ],
   /** Bao nhiêu tầng bánh răng lặp lại theo chiều cao. */
-  GEAR_ROWS: 5,
+  GEAR_ROWS: 4,
   GEAR_ROW_SPACING: 70,
 
   AUDIO: {
@@ -319,6 +349,35 @@ export const FX = {
 };
 
 // ============================================================================
+// [7b] PERF — Hệ tự điều chỉnh chất lượng theo sức máy
+// ----------------------------------------------------------------------------
+//  Game này chạy trên đủ loại máy, từ card rời tới đồ hoạ tích hợp. Thay vì bắt
+//  người chơi tự vào cài đặt, Stage.js tự đo FPS và HẠ CHẤT LƯỢNG DẦN khi thấy
+//  máy đuối. Ưu tiên tuyệt đối: giữ được 60 fps, vì đây là game đòi độ chính
+//  xác từng khung hình — giật hình là chết oan.
+//
+//  3 mức: 2 = Cao (đủ bóng đổ) · 1 = Vừa (bóng đổ thô) · 0 = Thấp (tắt bóng đổ)
+// ============================================================================
+export const PERF = {
+  /** Trần tỉ lệ điểm ảnh. Màn hình Retina để 2 sẽ phải tô gấp 4 lần số điểm ảnh. */
+  MAX_PIXEL_RATIO: 1.5,
+
+  /** Dưới ngưỡng này thì hạ một mức chất lượng. */
+  DOWNGRADE_FPS: 45,
+  /** Phải tệ liên tục bấy nhiêu lần đo mới hạ, tránh hạ oan vì một khựng nhất thời. */
+  DOWNGRADE_STREAK: 2,
+  /** Mỗi lần đo kéo dài bao lâu (giây). */
+  SAMPLE_WINDOW: 1.0,
+
+  /** Cấu hình từng mức. */
+  LEVELS: [
+    { name: 'Thấp', pixelRatio: 1.0, shadows: false, shadowMap: 512 },
+    { name: 'Vừa', pixelRatio: 1.0, shadows: true, shadowMap: 512 },
+    { name: 'Cao', pixelRatio: 1.5, shadows: true, shadowMap: 1024 },
+  ],
+};
+
+// ============================================================================
 // [8] KEYS — Bảng ánh xạ phím (đổi phím ở đây, không đổi trong Input.js)
 // ============================================================================
 export const KEYS = {
@@ -328,6 +387,7 @@ export const KEYS = {
   GOD_MODE: ['KeyG'],
   RESET: ['KeyR'],
   MUTE: ['KeyM'],
+  QUALITY: ['KeyP'],   // đổi mức đồ hoạ bằng tay (Thấp → Vừa → Cao → Thấp…)
   LEFT: ['KeyA', 'ArrowLeft'],
   RIGHT: ['KeyD', 'ArrowRight'],
   UP: ['KeyW', 'ArrowUp'],

@@ -6,18 +6,26 @@
  *  Bốn lớp chiều sâu khác nhau: lớp càng xa thì trôi càng chậm khi camera lên
  *  cao, tạo ảo giác không gian ba chiều thật sự.
  *
+ *  ⚡ HIỆU NĂNG — điều quan trọng nhất của file này
+ *    Một bánh răng gồm vành + trục + 10–18 răng cưa + 3 nan hoa. Nếu để mỗi
+ *    chi tiết là một mesh thì 16 bánh răng = 370 mesh = 370 lệnh vẽ mỗi khung
+ *    hình, đủ để kéo game xuống 16 fps.
+ *    Cách làm ở đây: GỘP toàn bộ chi tiết của một bánh răng thành MỘT khối
+ *    hình học duy nhất ngay lúc khởi tạo → mỗi bánh răng chỉ còn 1 lệnh vẽ.
+ *
  *  MỤC LỤC
- *    [1] DỰNG MỘT BÁNH RĂNG (vành + răng + nan hoa)
- *    [2] KHỞI TẠO CÁC LỚP — mỗi lớp một chiều sâu, tốc độ quay, hệ số parallax
+ *    [1] DỰNG MỘT BÁNH RĂNG ĐÃ GỘP (vành + răng + nan hoa → 1 geometry)
+ *    [2] KHỞI TẠO CÁC LỚP
  *    [3] update() — quay bánh răng + cuộn lặp vô tận theo camera
  *
  *  CHỈNH Ở ĐÂU?
- *    • Số lớp, bán kính, tốc độ quay, hệ số parallax → core/Config.js phần [7] FX.GEARS
+ *    • Số lớp, bán kính, tốc độ quay, hệ số parallax → core/Config.js phần [7]
  * ============================================================================
  */
 
 import * as THREE from 'three';
 import { FX } from '../core/Config.js';
+import { coloredSolid, mergeAll, vertexColorMaterial } from './MergeUtils.js';
 
 export class Parallax {
   constructor(scene) {
@@ -30,43 +38,47 @@ export class Parallax {
     /** Chiều cao một chu kỳ lặp — vượt quá thì bánh răng được cuộn vòng lại. */
     this.span = FX.GEAR_ROWS * FX.GEAR_ROW_SPACING;
 
+    // Một vật liệu duy nhất cho TẤT CẢ bánh răng; màu nằm trong từng đỉnh.
+    this.material = vertexColorMaterial();
+
     this.build();
   }
 
   // ==========================================================================
-  // [1] DỰNG MỘT BÁNH RĂNG
+  // [1] DỰNG MỘT BÁNH RĂNG ĐÃ GỘP
+  // ----------------------------------------------------------------------------
+  //  Từng chi tiết được tạo ra, dịch/xoay về đúng chỗ, sơn màu vào đỉnh, rồi
+  //  tất cả được nối lại thành một khối. Sau bước này không còn "chi tiết" nào
+  //  tồn tại riêng lẻ nữa — chỉ còn một mảng số gửi thẳng cho GPU.
   // ==========================================================================
-  buildGear(radius, teeth, color) {
-    const g = new THREE.Group();
-    const mat = new THREE.MeshLambertMaterial({ color });
+  buildGearGeometry(radius, teeth, colorHex) {
+    const parts = [];
 
     // Vành ngoài
-    const rim = new THREE.Mesh(new THREE.TorusGeometry(radius, radius * 0.09, 6, 28), mat);
-    g.add(rim);
+    parts.push(new THREE.TorusGeometry(radius, radius * 0.09, 5, 22));
 
     // Trục giữa
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.16, radius * 0.16, 1.5, 10), mat);
-    hub.rotation.x = Math.PI / 2;
-    g.add(hub);
+    const hub = new THREE.CylinderGeometry(radius * 0.16, radius * 0.16, 1.5, 8);
+    hub.rotateX(Math.PI / 2);
+    parts.push(hub);
 
     // Răng cưa quanh vành
-    const toothGeo = new THREE.BoxGeometry(radius * 0.16, radius * 0.22, 1.4);
     for (let i = 0; i < teeth; i++) {
       const a = (i / teeth) * Math.PI * 2;
-      const t = new THREE.Mesh(toothGeo, mat);
-      t.position.set(Math.cos(a) * radius, Math.sin(a) * radius, 0);
-      t.rotation.z = a;
-      g.add(t);
+      const t = new THREE.BoxGeometry(radius * 0.16, radius * 0.22, 1.4);
+      t.rotateZ(a);
+      t.translate(Math.cos(a) * radius, Math.sin(a) * radius, 0);
+      parts.push(t);
     }
 
     // Nan hoa nối trục với vành
-    const spokeGeo = new THREE.BoxGeometry(radius * 1.85, radius * 0.09, 1.2);
     for (let i = 0; i < 3; i++) {
-      const s = new THREE.Mesh(spokeGeo, mat);
-      s.rotation.z = (i / 3) * Math.PI;
-      g.add(s);
+      const s = new THREE.BoxGeometry(radius * 1.85, radius * 0.09, 1.2);
+      s.rotateZ((i / 3) * Math.PI);
+      parts.push(s);
     }
-    return g;
+
+    return mergeAll(parts.map((g) => coloredSolid(g, colorHex)));
   }
 
   // ==========================================================================
@@ -74,16 +86,21 @@ export class Parallax {
   // ==========================================================================
   build() {
     FX.GEARS.forEach((spec, layer) => {
-      for (let row = 0; row < FX.GEAR_ROWS; row++) {
-        // Lớp càng xa càng tối màu → củng cố cảm giác chiều sâu.
-        const shade = 0.30 + layer * 0.10;
-        const color = new THREE.Color(0x8a6320).multiplyScalar(shade);
+      // Lớp càng xa càng tối màu → củng cố cảm giác chiều sâu.
+      const shade = 0.30 + layer * 0.10;
+      const color = new THREE.Color(0x8a6320).multiplyScalar(shade).getHex();
 
-        const mesh = this.buildGear(spec.radius, spec.teeth, color);
+      // Cả một lớp dùng chung MỘT khối hình học (chỉ khác vị trí và góc quay),
+      // nên GPU chỉ phải nạp dữ liệu 4 lần cho toàn bộ hậu cảnh.
+      const geo = this.buildGearGeometry(spec.radius, spec.teeth, color);
+
+      for (let row = 0; row < FX.GEAR_ROWS; row++) {
+        const mesh = new THREE.Mesh(geo, this.material);
         // So le trái/phải và lệch pha theo hàng để không nhìn ra quy luật lặp.
         const side = (row + layer) % 2 === 0 ? -1 : 1;
         mesh.position.set(side * (14 + layer * 5), row * FX.GEAR_ROW_SPACING, spec.z);
         mesh.rotation.z = (row * 1.7 + layer) % (Math.PI * 2);
+        mesh.matrixAutoUpdate = true;
         this.group.add(mesh);
         this.gears.push({ mesh, spec, baseY: mesh.position.y });
       }

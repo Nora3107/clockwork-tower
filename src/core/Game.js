@@ -134,9 +134,18 @@ export class Game {
     this.stage.setZoneMood(this.player.y);
     this.parallax.update(dt, this.stage.camY);
     this.particles.update(dt);
-    this.hud.update(this.player, this.elapsed, dt);
-    this.stage.render();
 
+    // Đo hiệu năng và tự hạ chất lượng nếu máy đuối (xem Stage.js phần [9]).
+    if (this.stage.measurePerformance(dt)) {
+      this.hud.toast(`ĐỒ HOẠ: ${this.stage.qualityName.toUpperCase()} (tự hạ cho mượt)`, 2.4);
+      this.particles.setScale(this.stage.pixelsPerUnit);
+    }
+    this.hud.update(this.player, this.elapsed, dt, {
+      fps: this.stage.fps,
+      quality: this.stage.qualityName,
+    });
+
+    this.stage.render();
     this.input.endFrame();
   };
 
@@ -276,6 +285,12 @@ export class Game {
       this.audio.stopCharge();
       this.startRun();
       this.hud.toast('LÀM LẠI TỪ CHÂN THÁP');
+    }
+
+    if (this.input.wasPressed('QUALITY')) {
+      const name = this.stage.cycleQuality();
+      this.particles.setScale(this.stage.pixelsPerUnit);
+      this.hud.toast(`ĐỒ HOẠ: ${name.toUpperCase()}`);
     }
 
     if (this.state === 'PLAYING' && this.input.wasPressed('GOD_MODE')) {

@@ -20,6 +20,7 @@
 
 import * as THREE from 'three';
 import { PLAYER } from '../core/Config.js';
+import { coloredSolid, mergeAll, vertexColorMaterial } from '../render/MergeUtils.js';
 
 /** Màu chủ đạo của chú robot. */
 const BRASS = 0xd9a441;
@@ -53,57 +54,61 @@ export class PlayerView {
   // ==========================================================================
   // [2] DỰNG THÂN ROBOT
   // ==========================================================================
+  //  ⚡ Mọi bộ phận KHÔNG tự cử động (thân, mũ, chân, ăng-ten, vành kính, tròng
+  //  kính) được gộp thành MỘT khối hình học duy nhất. Chỉ ba thứ thật sự nhúc
+  //  nhích mới giữ mesh riêng: bánh răng lưng (quay), bóng đèn (đổi màu) và
+  //  con ngươi (liếc theo chuột). 10 mesh → 4 mesh.
   buildBody() {
     const W = PLAYER.WIDTH;
     const H = PLAYER.HEIGHT;
+    const parts = [];
 
     // --- Khung thân bằng đồng ------------------------------------------------
-    const chassis = new THREE.Mesh(
-      new THREE.BoxGeometry(W, H * 0.72, 2.0),
-      new THREE.MeshLambertMaterial({ color: BRASS }),
-    );
-    chassis.position.y = -H * 0.06;
-    chassis.castShadow = true;
-    this.body.add(chassis);
+    const chassis = new THREE.BoxGeometry(W, H * 0.72, 2.0);
+    chassis.translate(0, -H * 0.06, 0);
+    parts.push(coloredSolid(chassis, BRASS));
 
     // --- Mũ chụp đầu ---------------------------------------------------------
-    const cap = new THREE.Mesh(
-      new THREE.CylinderGeometry(W * 0.42, W * 0.46, H * 0.22, 12),
-      new THREE.MeshLambertMaterial({ color: BRASS_DARK }),
-    );
-    cap.position.y = H * 0.36;
-    cap.castShadow = true;
-    this.body.add(cap);
+    const cap = new THREE.CylinderGeometry(W * 0.42, W * 0.46, H * 0.22, 10);
+    cap.translate(0, H * 0.36, 0);
+    parts.push(coloredSolid(cap, BRASS_DARK));
+
+    // --- Hai chân nhỏ --------------------------------------------------------
+    for (const s of [-1, 1]) {
+      const foot = new THREE.BoxGeometry(W * 0.28, H * 0.16, 1.4);
+      foot.translate(s * W * 0.28, -H * 0.44, 0.2);
+      parts.push(coloredSolid(foot, BRASS_DARK));
+    }
+
+    // --- Ăng-ten -------------------------------------------------------------
+    const rod = new THREE.CylinderGeometry(0.07, 0.07, H * 0.34, 5);
+    rod.translate(0, H * 0.6, 0);
+    parts.push(coloredSolid(rod, STEEL));
+
+    // --- Vành kính + tròng kính (phần cố định của con mắt) ------------------
+    const rim = new THREE.TorusGeometry(W * 0.31, 0.1, 5, 14);
+    rim.translate(0, H * 0.06, 1.02);
+    parts.push(coloredSolid(rim, BRASS_DARK));
+
+    const lens = new THREE.CircleGeometry(W * 0.3, 14);
+    lens.translate(0, H * 0.06, 1.02);
+    parts.push(coloredSolid(lens, 0x102028));
+
+    this.shell = new THREE.Mesh(mergeAll(parts), vertexColorMaterial());
+    this.shell.castShadow = true;
+    this.body.add(this.shell);
 
     // --- Bánh răng sau lưng: quay theo quãng đường đã đi ---------------------
     this.wheel = new THREE.Mesh(
-      new THREE.TorusGeometry(W * 0.34, 0.16, 6, 12),
+      new THREE.TorusGeometry(W * 0.34, 0.16, 5, 10),
       new THREE.MeshLambertMaterial({ color: STEEL }),
     );
     this.wheel.position.set(0, -H * 0.05, -1.15);
     this.body.add(this.wheel);
 
-    // --- Hai chân nhỏ --------------------------------------------------------
-    for (const s of [-1, 1]) {
-      const foot = new THREE.Mesh(
-        new THREE.BoxGeometry(W * 0.28, H * 0.16, 1.4),
-        new THREE.MeshLambertMaterial({ color: BRASS_DARK }),
-      );
-      foot.position.set(s * W * 0.28, -H * 0.44, 0.2);
-      foot.castShadow = true;
-      this.body.add(foot);
-    }
-
-    // --- Ăng-ten + bóng đèn báo hiệu ----------------------------------------
-    const rod = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.07, 0.07, H * 0.34, 6),
-      new THREE.MeshLambertMaterial({ color: STEEL }),
-    );
-    rod.position.y = H * 0.6;
-    this.body.add(rod);
-
+    // --- Bóng đèn báo hiệu: xanh = dash sẵn sàng, đỏ = đang hồi chiêu -------
     this.bulb = new THREE.Mesh(
-      new THREE.SphereGeometry(0.26, 8, 8),
+      new THREE.SphereGeometry(0.26, 7, 6),
       new THREE.MeshBasicMaterial({ color: EYE_GLOW }),
     );
     this.bulb.position.y = H * 0.78;
@@ -116,30 +121,16 @@ export class PlayerView {
   //  Mắt gồm 2 lớp: tròng kính lớn (cố định) và con ngươi nhỏ (trượt theo
   //  hướng chuột). Chi tiết bé xíu này là thứ khiến chú robot có "hồn".
   // ==========================================================================
+  //  Vành kính và tròng kính đã được gộp vào thân ở [2]; ở đây chỉ còn CON
+  //  NGƯƠI — thứ duy nhất thật sự cử động, và cũng là thứ mang lại "hồn" cho
+  //  chú robot: nó luôn liếc theo con trỏ chuột của người chơi.
   buildEye() {
-    const W = PLAYER.WIDTH;
-
-    this.lens = new THREE.Mesh(
-      new THREE.CircleGeometry(W * 0.3, 16),
-      new THREE.MeshBasicMaterial({ color: 0x102028 }),
-    );
-    this.lens.position.set(0, PLAYER.HEIGHT * 0.06, 1.02);
-    this.body.add(this.lens);
-
     this.pupil = new THREE.Mesh(
-      new THREE.CircleGeometry(W * 0.15, 12),
+      new THREE.CircleGeometry(PLAYER.WIDTH * 0.15, 10),
       new THREE.MeshBasicMaterial({ color: EYE_GLOW }),
     );
-    this.pupil.position.set(0, 0, 0.02);
-    this.lens.add(this.pupil);
-
-    // Vành kính bằng đồng bao quanh mắt.
-    const rim = new THREE.Mesh(
-      new THREE.TorusGeometry(W * 0.31, 0.1, 6, 18),
-      new THREE.MeshLambertMaterial({ color: BRASS_DARK }),
-    );
-    rim.position.copy(this.lens.position);
-    this.body.add(rim);
+    this.pupil.position.set(0, PLAYER.HEIGHT * 0.06, 1.06);
+    this.body.add(this.pupil);
   }
 
   // ==========================================================================
@@ -206,7 +197,7 @@ export class PlayerView {
     // --- 5.3 Mắt liếc theo chuột -------------------------------------------
     const reach = PLAYER.WIDTH * 0.13;
     this.pupil.position.x = p.aimRaw.x * reach;
-    this.pupil.position.y = p.aimRaw.y * reach;
+    this.pupil.position.y = PLAYER.HEIGHT * 0.06 + p.aimRaw.y * reach;
 
     // Bóng đèn ăng-ten: xanh = dash sẵn sàng, đỏ = đang hồi chiêu.
     this.bulb.material.color.setHex(p.dashCooldown > 0 ? 0xff6a4a : EYE_GLOW);

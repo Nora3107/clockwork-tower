@@ -26,7 +26,7 @@
  * ============================================================================
  */
 
-import { WORLD, PLAYER } from '../core/Config.js';
+import { WORLD, PLAYER, LEVEL_DESIGN } from '../core/Config.js';
 import { PlatformType } from '../physics/Platform.js';
 
 const HW = WORLD.HALF_WIDTH;          // 24 — nửa chiều rộng lòng tháp
@@ -57,16 +57,30 @@ function mulberry32(a) {
 //  thiểu v thoả  v² = g·( dy + √(dx² + dy²) ).
 //  Đặt COST = dy + √(dx² + dy²) thì điều kiện với tới là  COST ≤ v²max / g.
 //
-//  Với cấu hình mặc định (v=58, g=120):  MAX_COST ≈ 28.0
-//    • Nhảy thẳng đứng cao nhất : 14.0 đơn vị
-//    • Nhảy xa nhất (45°)       : 28.0 đơn vị
+//  ⚠ HAI THƯỚC ĐO KHÁC NHAU — đừng nhầm lẫn:
+//
+//    DESIGN_COST — tính từ LEVEL_DESIGN.JUMP_SPEED. Đây là thước dùng để ĐẶT
+//      BỤC. Nó phải đứng yên, vì mỗi lần nó đổi là cả toà tháp được sinh lại
+//      khác đi hoàn toàn.
+//
+//    MAX_COST — tính từ PLAYER.MAX_JUMP_SPEED, tức sức nhảy THẬT của người
+//      chơi hiện tại. Đây là thước dùng để KIỂM TRA map có đi được không.
+//
+//    Khoảng chênh giữa hai con số chính là "biên an toàn" của người chơi.
+//    Muốn game dễ thở hơn → tăng PLAYER.MAX_JUMP_SPEED (map giữ nguyên).
+//    Muốn tháp giãn rộng ra → tăng LEVEL_DESIGN.JUMP_SPEED (map vẽ lại).
 // ============================================================================
 const G = Math.abs(WORLD.GRAVITY);
+
+/** Tầm với thật sự của người chơi — dùng để kiểm tra map. */
 export const MAX_COST = (PLAYER.MAX_JUMP_SPEED ** 2) / G;
+
+/** Tầm với mà bản đồ được vẽ theo — dùng để đặt bục. */
+const DESIGN_COST = (LEVEL_DESIGN.JUMP_SPEED ** 2) / G;
 /** Ngưỡng "thoải mái" — chừa biên an toàn ~11% cho phần lớn bục. */
-const SAFE_COST = MAX_COST * 0.89;
+const SAFE_COST = DESIGN_COST * 0.89;
 /** Ngưỡng "nút thắt" — dành cho các cú nhảy chính xác cố tình làm khó. */
-const HARD_COST = MAX_COST * 0.96;
+const HARD_COST = DESIGN_COST * 0.96;
 /** Bậc thang không bao giờ được thấp hơn mức này so với bậc trước. */
 const MIN_STEP_Y = 3.5;
 
@@ -536,6 +550,7 @@ export function validateLevel(seed = SEED) {
     if (to.move) cost += to.move.range;              // băng chuyền có thể trôi ra xa
 
     if (cost > hardest.cost) hardest = { cost, from, to };
+    // So với sức nhảy THẬT của người chơi, không phải với thước vẽ map.
     if (cost > MAX_COST) {
       issues.push({
         level: 'error',

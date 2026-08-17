@@ -18,6 +18,10 @@
 | **`G`**           | **God Mode** — bay tự do khảo sát địa hình (dùng `WASD` / phím mũi tên).        |
 | **`R`**           | Về chân tháp làm lại (đồng hồ reset).                                          |
 | **`M`**           | Bật/tắt âm thanh.                                                              |
+| **`P`**           | Đổi mức đồ hoạ: Thấp → Vừa → Cao.                                              |
+
+> Góc trên trái có đồng hồ **FPS**. Game tự đo và **hạ mức đồ hoạ** nếu máy tụt dưới 45 fps —
+> giảm độ phân giải trước, tắt bóng đổ sau. Muốn ép mức nào thì bấm `P`.
 
 ## 🗼 Bản đồ tháp
 
