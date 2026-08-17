@@ -92,3 +92,21 @@ requestAnimationFrame
 | Âm lượng / âm sắc từng tiếng động      | `audio/AudioEngine.js`     | [3]    |
 | Bố cục HUD                             | `ui/HUD.js` + `style.css`  | —      |
 | Hình dáng chú robot                    | `entities/PlayerView.js`   | [2]    |
+
+## 6. Ba cái bẫy hình học của Phễu Tử Thần (đọc trước khi sửa map quanh phễu)
+
+Phễu chỉ hoạt động khi ba điều kiện dưới đây cùng đúng. `validateLevel()` kiểm
+tra tự động cả ba, nhưng hiểu nguyên nhân vẫn tốt hơn là chờ nó báo lỗi.
+
+1. **Không được có bục nào chắn ngang khe hở.** Bục đặt ngay trên khe sẽ hứng
+   luôn người rơi — cái bẫy trở thành cái đệm. Đường sống phải đi vòng qua bên
+   cạnh khe chứ không được bắc cầu qua khe.
+2. **Bục nằm trên mặt dốc phải cao hơn đầu người đang trượt.** Người trượt dốc
+   chiếm một khối cao 3.2 đơn vị tính từ mặt dốc; bất kỳ bục nào thò vào khối
+   đó sẽ chặn đứng cú trượt — kể cả khi nó chỉ chạm vào MẶT BÊN.
+3. **Phải có "ống tụt" (`throat`) ngay dưới khe.** Người trượt hết mặt dốc lao
+   ra với vận tốc ngang hơn 40 đơn vị/giây, đủ để bay vọt sang bờ bên kia
+   giếng và bám được vào bậc thang đối diện. Hai vách ống nhốt họ lại, cho họ
+   dội tường vài nhịp rồi rơi thẳng xuống đáy. Ống phải **rộng hơn khe** và
+   phải **kết thúc cách bệ hứng một quãng**, nếu không người chơi bị nhốt luôn
+   trong ống.

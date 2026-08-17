@@ -30,8 +30,10 @@ Một màn chơi duy nhất, liền mạch từ **Y: 0** lên **Y: 1050**.
 | 3    | 650 → 1000    | ⚙️ Lõi Tháp Đồng Hồ    | Băng chuyền, lò xo, bục sập. **Siêu Phễu Tử Thần #2 @ Y880**   |
 | 🏆   | 1050          | ✨ Đỉnh Tháp           | Cỗ Máy Thời Gian                                               |
 
-**Phễu Tử Thần:** vách dốc hình chữ V úp ngược dồn vào một khe hở. Trượt chân ở tầng trên là bị
-hút vào khe và tuột thẳng xuống mấy tầng dưới — xoá sạch thành quả leo trèo.
+**Phễu Tử Thần:** vách dốc chụm vào một khe hở, bên dưới khe là một **ống tụt** kín.
+Trượt chân ở tầng trên là bị hút vào khe, dội qua dội lại trong ống rồi rơi thẳng
+xuống mấy tầng dưới — xoá sạch thành quả leo trèo. Phễu #1 ném bạn về Y118,
+Siêu Phễu #2 ném bạn từ Y880 về tận Y630.
 
 ## 🧱 Các loại bục
 

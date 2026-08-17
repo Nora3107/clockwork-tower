@@ -39,7 +39,9 @@ export class Stage {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // PCFSoftShadowMap đã bị three.js khai tử từ r18x; PCFShadowMap là bản
+    // được khuyến nghị thay thế, nhẹ hơn và không sinh cảnh báo.
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
     container.appendChild(this.renderer.domElement);
 
     this.scene = new THREE.Scene();
