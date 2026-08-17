@@ -1,18 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<!--
+  ============================================================================
+   index.html — Khung trang duy nhất của game
+  ============================================================================
+   Cố ý giữ tối giản: chỉ có 2 lớp chồng lên nhau
+     #app  → canvas WebGL (Stage.js tự gắn canvas vào đây)
+     #ui   → lớp giao diện 2D (HUD.js và Screens.js tự dựng DOM vào đây)
+   Toàn bộ nội dung giao diện nằm trong src/ui/, không viết cứng ở đây.
+  ============================================================================
+-->
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Paper Peak</title>
+    <meta name="description" content="The Clockwork Tower - game leo thap thu thach do chinh xac cao" />
+    <title>The Clockwork Tower — Tháp Đồng Hồ</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
     <div id="app"></div>
-    <div id="ui-layer">
-      <div id="power-container">
-        <div id="power-bar"></div>
-      </div>
-    </div>
+    <div id="ui"></div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

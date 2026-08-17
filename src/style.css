@@ -1,0 +1,388 @@
+/* ============================================================================
+ *  style.css — Toàn bộ giao diện 2D phủ lên trên khung cảnh 3D
+ * ============================================================================
+ *  MỤC LỤC
+ *    [1] BIẾN MÀU & NỀN TẢNG
+ *    [2] KHUNG TRANG & LỚP CANVAS
+ *    [3] HUD — bảng góc, đồng hồ, thanh lực, ô kỹ năng
+ *    [4] CỘT TIẾN ĐỘ LEO THÁP
+ *    [5] TOAST
+ *    [6] MÀN HÌNH MENU / VINH DANH
+ *    [7] ĐÁP ỨNG MÀN HÌNH NHỎ
+ * ========================================================================== */
+
+/* ==========================================================================
+   [1] BIẾN MÀU & NỀN TẢNG
+   ========================================================================== */
+:root {
+  --brass: #d9a441;
+  --brass-dim: #8a6320;
+  --ink: #0b0e13;
+  --panel: rgba(10, 14, 20, 0.62);
+  --panel-line: rgba(217, 164, 65, 0.35);
+  --text: #f2e9d8;
+  --text-dim: #9aa3ad;
+  --cyan: #7cf0ff;
+  --green: #5cff8f;
+  --danger: #ff5a3c;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --mono: 'Cascadia Mono', 'Consolas', ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--font);
+  user-select: none;
+  cursor: crosshair;                 /* con trỏ ngắm bắn */
+}
+
+/* ==========================================================================
+   [2] KHUNG TRANG & LỚP CANVAS
+   ========================================================================== */
+#app { position: fixed; inset: 0; }
+#app canvas { display: block; }
+
+#ui { position: fixed; inset: 0; pointer-events: none; }
+
+/* ==========================================================================
+   [3] HUD
+   ========================================================================== */
+.hud { position: absolute; inset: 0; transition: opacity 0.25s; }
+.hud.is-hidden { opacity: 0; }
+
+.hud-panel {
+  position: absolute;
+  padding: 10px 14px;
+  background: var(--panel);
+  border: 1px solid var(--panel-line);
+  border-radius: 10px;
+  backdrop-filter: blur(6px);
+}
+
+.hud-topleft { top: 16px; left: 16px; min-width: 190px; }
+.hud-topright { top: 16px; right: 16px; text-align: right; }
+
+.hud-timer {
+  font-family: var(--mono);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--brass);
+  line-height: 1.05;
+  text-shadow: 0 0 16px rgba(217, 164, 65, 0.45);
+}
+
+.hud-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  font-family: var(--mono);
+  font-size: 13px;
+  margin-top: 3px;
+  color: var(--text);
+}
+
+.hud-label { color: var(--text-dim); letter-spacing: 1px; font-size: 11px; }
+
+.hud-zone {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--brass);
+}
+
+.hud-flags { display: flex; gap: 6px; justify-content: flex-end; margin-top: 4px; min-height: 18px; }
+
+.hud-flag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+}
+.hud-flag.is-god { background: var(--green); color: #06210f; }
+
+/* --- Đáy màn hình: thanh lực + kỹ năng ---------------------------------- */
+.hud-bottom {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.hud-skills { display: flex; gap: 8px; }
+
+.hud-skill {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--panel-line);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+}
+.hud-skill.is-ready { border-color: var(--cyan); box-shadow: 0 0 14px rgba(124, 240, 255, 0.28); }
+
+/* Lớp phủ tối dâng từ dưới lên = thời gian còn phải chờ */
+.hud-skill-cd {
+  position: absolute;
+  left: 0; bottom: 0;
+  width: 100%;
+  height: 0%;
+  background: rgba(0, 0, 0, 0.72);
+  transition: height 0.06s linear;
+}
+
+.hud-skill-key {
+  position: relative;
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+}
+.hud-skill-name {
+  position: relative;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+}
+
+/* --- Thanh lực nhảy ------------------------------------------------------ */
+.hud-power {
+  position: relative;
+  width: 340px;
+  height: 22px;
+  border-radius: 11px;
+  background: var(--panel);
+  border: 1px solid var(--panel-line);
+  overflow: hidden;
+  backdrop-filter: blur(6px);
+}
+
+.hud-power-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #6fd36f 0%, #ffd85e 55%, var(--danger) 100%);
+  transition: width 0.02s linear;
+  opacity: 0.55;
+}
+.hud-power-fill.is-charging { opacity: 1; box-shadow: 0 0 18px rgba(255, 216, 94, 0.55); }
+
+/* Vạch mốc 40% / 60% / 80% — những mức lực map bắt buộc phải căn được */
+.hud-power-marks {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(90deg, transparent 39.7%, rgba(255,255,255,0.35) 39.7%, rgba(255,255,255,0.35) 40.3%, transparent 40.3%),
+    linear-gradient(90deg, transparent 59.7%, rgba(255,255,255,0.35) 59.7%, rgba(255,255,255,0.35) 60.3%, transparent 60.3%),
+    linear-gradient(90deg, transparent 79.7%, rgba(255,255,255,0.35) 79.7%, rgba(255,255,255,0.35) 80.3%, transparent 80.3%);
+}
+
+/* ==========================================================================
+   [4] CỘT TIẾN ĐỘ LEO THÁP
+   ========================================================================== */
+.hud-tower {
+  position: absolute;
+  right: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 46vh;
+}
+
+.hud-tower-track {
+  position: absolute; inset: 0;
+  border-radius: 5px;
+  background: rgba(10, 14, 20, 0.6);
+  border: 1px solid var(--panel-line);
+}
+
+.hud-tower-zone {
+  position: absolute;
+  left: 0; width: 100%; height: 2px;
+  opacity: 0.8;
+}
+
+.hud-tower-funnel {
+  position: absolute;
+  left: -4px; width: 18px; height: 3px;
+  background: var(--danger);
+  box-shadow: 0 0 8px var(--danger);
+  border-radius: 2px;
+}
+
+.hud-tower-dot {
+  position: absolute;
+  left: -3px;
+  width: 16px; height: 16px;
+  margin-bottom: -8px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 12px var(--cyan);
+  transition: bottom 0.08s linear;
+}
+
+/* ==========================================================================
+   [5] TOAST
+   ========================================================================== */
+.hud-toast {
+  position: absolute;
+  left: 50%;
+  top: 22%;
+  transform: translate(-50%, -10px);
+  padding: 10px 22px;
+  border-radius: 10px;
+  background: var(--panel);
+  border: 1px solid var(--panel-line);
+  font-weight: 700;
+  letter-spacing: 2px;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.hud-toast.is-show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ==========================================================================
+   [6] MÀN HÌNH MENU / VINH DANH
+   ========================================================================== */
+.screens { position: absolute; inset: 0; }
+
+.screen {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, rgba(8, 11, 16, 0.72) 0%, rgba(4, 6, 9, 0.94) 100%);
+  animation: fade-in 0.35s ease;
+}
+.screen.is-show { display: flex; }
+
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+.screen-box {
+  width: min(680px, 92vw);
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 30px 36px;
+  text-align: center;
+  border: 1px solid var(--panel-line);
+  border-radius: 18px;
+  background: rgba(10, 14, 20, 0.72);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+}
+
+.screen-kicker {
+  font-size: 11px;
+  letter-spacing: 4px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+
+.screen-title {
+  margin: 0;
+  font-size: clamp(28px, 5vw, 46px);
+  letter-spacing: 4px;
+  color: var(--brass);
+  text-shadow: 0 0 30px rgba(217, 164, 65, 0.35);
+}
+.screen-title-win { color: #ffd85e; }
+
+.screen-sub {
+  font-size: 13px;
+  letter-spacing: 8px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+.screen-story {
+  margin: 18px auto 20px;
+  max-width: 520px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text);
+  opacity: 0.9;
+}
+
+.screen-keys {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 18px;
+  margin: 0 auto 20px;
+  max-width: 560px;
+  text-align: left;
+}
+
+.key-row { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-dim); }
+.key-row span { flex: 1; }
+
+kbd {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 5px;
+  border: 1px solid var(--panel-line);
+  background: rgba(255, 255, 255, 0.06);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.screen-stats {
+  display: flex;
+  justify-content: center;
+  gap: 34px;
+  margin: 18px 0 8px;
+  font-family: var(--mono);
+}
+.screen-stats b { display: block; font-size: 17px; color: var(--brass); }
+.screen-label { font-size: 10px; letter-spacing: 2px; color: var(--text-dim); }
+
+.screen-cta {
+  margin-top: 20px;
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--text);
+  animation: pulse 1.8s ease-in-out infinite;
+}
+@keyframes pulse { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+
+.win-time {
+  font-family: var(--mono);
+  font-size: clamp(34px, 7vw, 58px);
+  font-weight: 700;
+  color: #fff3b0;
+  margin: 18px 0 2px;
+  text-shadow: 0 0 34px rgba(255, 216, 94, 0.5);
+}
+
+.win-record {
+  font-size: 13px;
+  letter-spacing: 4px;
+  color: var(--green);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+/* ==========================================================================
+   [7] ĐÁP ỨNG MÀN HÌNH NHỎ
+   ========================================================================== */
+@media (max-width: 760px) {
+  .hud-timer { font-size: 22px; }
+  .hud-power { width: 200px; }
+  .hud-tower { height: 34vh; right: 12px; }
+  .screen-keys { grid-template-columns: 1fr; }
+}
