@@ -238,6 +238,41 @@ html, body {
 }
 
 /* ==========================================================================
+   [4b] BẢNG ĐO HIỆU NĂNG (phím F)
+   ========================================================================== */
+.hud-debug {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  display: none;
+  min-width: 250px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(6, 9, 13, 0.86);
+  border: 1px solid var(--panel-line);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.55;
+  backdrop-filter: blur(6px);
+}
+.hud-debug.is-show { display: block; }
+.hud-debug > b { color: var(--brass); letter-spacing: 1px; }
+.hud-debug .dim { color: var(--text-dim); font-weight: 400; }
+.hud-debug div { display: flex; justify-content: space-between; gap: 16px; }
+.hud-debug div span { color: var(--text-dim); }
+.hud-debug div b { color: var(--text); }
+.hud-debug hr { border: 0; border-top: 1px solid var(--panel-line); margin: 6px 0; }
+.hud-debug .verdict {
+  display: block;
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid var(--panel-line);
+  color: var(--cyan);
+  white-space: normal;
+  line-height: 1.4;
+}
+
+/* ==========================================================================
    [5] TOAST
    ========================================================================== */
 .hud-toast {

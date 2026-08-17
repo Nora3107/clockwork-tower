@@ -362,6 +362,17 @@ export const PERF = {
   /** Trần tỉ lệ điểm ảnh. Màn hình Retina để 2 sẽ phải tô gấp 4 lần số điểm ảnh. */
   MAX_PIXEL_RATIO: 1.5,
 
+  /**
+   * Trần TUYỆT ĐỐI cho số điểm ảnh của khung vẽ (2.6 triệu ≈ 2160×1200).
+   *
+   * Vì sao cần cái trần này khi GPU thừa sức? Vì chi phí không nằm ở chỗ vẽ,
+   * mà ở chỗ TRÌNH DUYỆT PHẢI CHÉP khung vẽ đó lên màn hình mỗi khung hình.
+   * Trên màn 4K hoặc cửa sổ rất rộng, riêng bước chép này đã đủ ăn hết 16 ms.
+   * Hạ độ phân giải trong xuống rồi để trình duyệt phóng to lại vừa rẻ hơn
+   * nhiều, vừa gần như không nhìn ra khác biệt với đồ hoạ khối phẳng như game này.
+   */
+  MAX_CANVAS_PIXELS: 2.6e6,
+
   /** Dưới ngưỡng này thì hạ một mức chất lượng. */
   DOWNGRADE_FPS: 45,
   /** Phải tệ liên tục bấy nhiêu lần đo mới hạ, tránh hạ oan vì một khựng nhất thời. */
@@ -369,11 +380,15 @@ export const PERF = {
   /** Mỗi lần đo kéo dài bao lâu (giây). */
   SAMPLE_WINDOW: 1.0,
 
-  /** Cấu hình từng mức. */
+  /**
+   * Cấu hình từng mức.
+   *  scale = hệ số độ phân giải trong. 0.7 nghĩa là vẽ ở 70% kích thước rồi
+   *  để trình duyệt phóng lên — cắt được một nửa số điểm ảnh phải xử lý.
+   */
   LEVELS: [
-    { name: 'Thấp', pixelRatio: 1.0, shadows: false, shadowMap: 512 },
-    { name: 'Vừa', pixelRatio: 1.0, shadows: true, shadowMap: 512 },
-    { name: 'Cao', pixelRatio: 1.5, shadows: true, shadowMap: 1024 },
+    { name: 'Thấp', pixelRatio: 1.0, scale: 0.65, shadows: false, shadowMap: 512 },
+    { name: 'Vừa', pixelRatio: 1.0, scale: 0.85, shadows: true, shadowMap: 512 },
+    { name: 'Cao', pixelRatio: 1.5, scale: 1.0, shadows: true, shadowMap: 1024 },
   ],
 };
 
@@ -388,6 +403,7 @@ export const KEYS = {
   RESET: ['KeyR'],
   MUTE: ['KeyM'],
   QUALITY: ['KeyP'],   // đổi mức đồ hoạ bằng tay (Thấp → Vừa → Cao → Thấp…)
+  DEBUG: ['KeyF'],     // bật/tắt bảng đo hiệu năng chi tiết
   LEFT: ['KeyA', 'ArrowLeft'],
   RIGHT: ['KeyD', 'ArrowRight'],
   UP: ['KeyW', 'ArrowUp'],

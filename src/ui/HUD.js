@@ -13,6 +13,7 @@
  *    [5] CỘT TIẾN ĐỘ LEO THÁP (bên phải màn hình)
  *    [6] TOAST — thông báo ngắn giữa màn hình
  *    [7] update() — gọi mỗi frame
+ *    [8] BẢNG ĐO HIỆU NĂNG — bật bằng phím F khi cần truy tìm nguyên nhân giật
  *
  *  CHỈNH Ở ĐÂU?
  *    • Bố cục, màu sắc, kích thước → src/style.css (các lớp bắt đầu bằng .hud-)
@@ -69,6 +70,9 @@ export class HUD {
         <div class="hud-tower-track" id="hud-tower-track"></div>
         <div class="hud-tower-dot" id="hud-tower-dot"></div>
       </div>
+
+      <!-- Bảng đo hiệu năng chi tiết (phím F) -->
+      <div class="hud-debug" id="hud-debug"></div>
     `;
     root.appendChild(this.el);
 
@@ -85,6 +89,8 @@ export class HUD {
     this.dashBox = this.el.querySelector('#hud-skill-dash');
     this.brakeBox = this.el.querySelector('#hud-skill-brake');
     this.towerDot = this.el.querySelector('#hud-tower-dot');
+    this.debugEl = this.el.querySelector('#hud-debug');
+    this.showDebug = false;
 
     this.buildTowerTrack();
     this.refreshBest();
@@ -192,6 +198,54 @@ export class HUD {
         this._toastEl.classList.remove('is-show');
       }
     }
+  }
+
+  // ==========================================================================
+  // [8] BẢNG ĐO HIỆU NĂNG (phím F)
+  // ----------------------------------------------------------------------------
+  //  Bảng này tồn tại để trả lời đúng MỘT câu hỏi khi game bị giật:
+  //  "thời gian trôi đi đâu mất?"
+  //
+  //    • JS ms  — tổng thời gian code của game chạy trong một khung hình
+  //    • GPU ms — thời gian CPU nộp lệnh vẽ cho card đồ hoạ
+  //    • Khung  — khoảng cách thật giữa hai khung hình liên tiếp
+  //
+  //  CÁCH ĐỌC:
+  //    JS ms ≈ Khung  → chính code game chậm, phải tối ưu game.
+  //    JS ms ≪ Khung  → game đã xong việc từ lâu rồi ngồi CHỜ. Thủ phạm nằm
+  //                     ngoài game: trình duyệt, trình quản lý cửa sổ, tần số
+  //                     quét màn hình, hoặc lớp hiển thị đang chép khung vẽ.
+  // ==========================================================================
+  toggleDebug() {
+    this.showDebug = !this.showDebug;
+    this.debugEl.classList.toggle('is-show', this.showDebug);
+    return this.showDebug;
+  }
+
+  updateDebug(perf, stats) {
+    if (!this.showDebug) return;
+    const frameMs = 1000 / Math.max(1, perf.fps);
+    const idle = frameMs - perf.jsMs;
+    const verdict = perf.jsMs > frameMs * 0.7
+      ? '⚠ CODE GAME đang là nút thắt'
+      : 'Game xong sớm rồi CHỜ → nút thắt nằm NGOÀI game';
+
+    this.debugEl.innerHTML = `
+      <b>ĐO HIỆU NĂNG</b> <span class="dim">(F để tắt)</span>
+      <div><span>FPS</span><b>${perf.fps.toFixed(1)}</b></div>
+      <div><span>Khung hình</span><b>${frameMs.toFixed(2)} ms</b></div>
+      <div><span>JS của game</span><b>${perf.jsMs.toFixed(2)} ms</b></div>
+      <div><span>&nbsp;└ nộp lệnh vẽ</span><b>${stats.renderMs.toFixed(2)} ms</b></div>
+      <div><span>Thời gian rảnh</span><b>${idle.toFixed(2)} ms</b></div>
+      <hr>
+      <div><span>Lệnh vẽ</span><b>${stats.calls}</b></div>
+      <div><span>Tam giác</span><b>${stats.triangles}</b></div>
+      <div><span>Khung vẽ</span><b>${stats.canvas}</b></div>
+      <div><span>Số điểm ảnh</span><b>${stats.pixels} tr</b></div>
+      <div><span>Tỉ lệ điểm ảnh</span><b>${stats.ratio}</b></div>
+      <div><span>Mức đồ hoạ</span><b>${stats.quality}</b></div>
+      <div class="verdict">${verdict}</div>
+    `;
   }
 
   // ==========================================================================

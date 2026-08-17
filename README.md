@@ -19,9 +19,27 @@
 | **`R`**           | Về chân tháp làm lại (đồng hồ reset).                                          |
 | **`M`**           | Bật/tắt âm thanh.                                                              |
 | **`P`**           | Đổi mức đồ hoạ: Thấp → Vừa → Cao.                                              |
+| **`F`**           | Bật/tắt bảng đo hiệu năng chi tiết.                                            |
 
 > Góc trên trái có đồng hồ **FPS**. Game tự đo và **hạ mức đồ hoạ** nếu máy tụt dưới 45 fps —
 > giảm độ phân giải trước, tắt bóng đổ sau. Muốn ép mức nào thì bấm `P`.
+
+### 🔍 Nếu game bị giật
+
+Bấm `F` để mở bảng đo. Chỉ cần so hai dòng:
+
+| Kết quả | Nghĩa là | Làm gì |
+| --- | --- | --- |
+| **JS của game** ≈ **Khung hình** | Code game đang là nút thắt | Hạ mức đồ hoạ bằng `P` |
+| **JS của game** ≪ **Khung hình** | Game xong việc từ lâu rồi ngồi chờ — nút thắt nằm **ngoài** game | Xem mục dưới |
+
+Khi nút thắt nằm ngoài game, thử theo thứ tự:
+
+1. Mở `http://localhost:5173` trong **cửa sổ Chrome/Edge thật**, không chạy trong khung xem nhúng
+   của trình soạn thảo (khung nhúng thường bị giới hạn khoảng 30 fps do phải chép lại từng khung hình).
+2. Chạy bản build thật thay vì dev server: `npm run build` rồi `npm run preview`.
+3. Windows → Cài đặt → Màn hình → Đồ hoạ → chọn trình duyệt → **Hiệu suất cao** (ép dùng card rời).
+4. Thu nhỏ cửa sổ trình duyệt lại — nếu fps tăng vọt thì nút thắt đúng là ở khâu hiển thị.
 
 ## 🗼 Bản đồ tháp
 

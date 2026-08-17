@@ -72,6 +72,7 @@ export class Stage {
     // --- Hệ tự điều chỉnh chất lượng (xem phần [9]) --------------------------
     this.quality = PERF.LEVELS.length - 1;   // khởi động ở mức cao nhất
     this.fps = 60;
+    this.renderMs = 0;
     this._frames = 0;
     this._sampleTime = 0;
     this._badStreak = 0;
@@ -228,7 +229,30 @@ export class Stage {
   }
 
   render() {
+    const t0 = performance.now();
     this.renderer.render(this.scene, this.camera);
+    // Chỉ đo thời gian NỘP LỆNH của CPU. GPU chạy bất đồng bộ nên con số này
+    // không phải thời gian vẽ thật, nhưng nó trả lời đúng câu hỏi cần hỏi:
+    // "CPU có đang bị kẹt ở khâu render không?"
+    // Làm mượt cùng hệ số với jsMs trong Game.js để hai con số so sánh được
+    // với nhau (nếu không, một khung hình cá biệt sẽ cho ra cảnh vô lý kiểu
+    // "nộp lệnh vẽ" lớn hơn cả tổng thời gian JS).
+    this.renderMs += (performance.now() - t0 - this.renderMs) * 0.1;
+  }
+
+  /** Số liệu cho bảng đo hiệu năng (phím F). */
+  get stats() {
+    const info = this.renderer.info.render;
+    const c = this.renderer.domElement;
+    return {
+      calls: info.calls,
+      triangles: info.triangles,
+      renderMs: this.renderMs || 0,
+      canvas: `${c.width}×${c.height}`,
+      pixels: (c.width * c.height / 1e6).toFixed(2),
+      ratio: this.renderer.getPixelRatio().toFixed(2),
+      quality: this.qualityName,
+    };
   }
 
   // ==========================================================================
@@ -280,7 +304,19 @@ export class Stage {
   applyQuality() {
     const q = PERF.LEVELS[this.quality];
 
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, q.pixelRatio, PERF.MAX_PIXEL_RATIO));
+    // --- Tính tỉ lệ điểm ảnh cuối cùng --------------------------------------
+    //  Ba tầng chặn: trần chung → hệ số của mức chất lượng → trần tuyệt đối
+    //  theo tổng số điểm ảnh (bảo vệ người dùng màn 4K / cửa sổ siêu rộng).
+    let ratio = Math.min(window.devicePixelRatio, q.pixelRatio, PERF.MAX_PIXEL_RATIO) * q.scale;
+
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const pixels = w * h * ratio * ratio;
+    if (pixels > PERF.MAX_CANVAS_PIXELS) {
+      ratio *= Math.sqrt(PERF.MAX_CANVAS_PIXELS / pixels);
+    }
+    this.renderer.setPixelRatio(ratio);
+
     this.renderer.shadowMap.enabled = q.shadows;
     this.sun.castShadow = q.shadows;
 

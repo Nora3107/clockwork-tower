@@ -67,6 +67,8 @@ export class Game {
     this.accumulator = 0;      // bộ dồn thời gian cho bước vật lý cố định
     this.lastNow = 0;
     this.fireworkTimer = 0;
+    /** Thời gian code game chiếm dụng mỗi khung hình (ms), đã làm mượt. */
+    this.jsMs = 0;
 
     // Cửa sổ đổi kích thước → hạt phải to lại cho đúng tỉ lệ.
     window.addEventListener('resize', () => this.particles.setScale(this.stage.pixelsPerUnit));
@@ -119,6 +121,7 @@ export class Game {
 
     const dt = Math.min((now - this.lastNow) / 1000, 0.1);   // chặn dt khi alt-tab về
     this.lastNow = now;
+    const jsStart = performance.now();
 
     this.updateAim();
     this.handleGlobalKeys();
@@ -147,6 +150,12 @@ export class Game {
 
     this.stage.render();
     this.input.endFrame();
+
+    // Đo thời gian code game thật sự chiếm dụng trong khung hình này.
+    // Làm mượt bằng trung bình trượt để con số không nhảy loạn.
+    const jsMs = performance.now() - jsStart;
+    this.jsMs += (jsMs - this.jsMs) * 0.1;
+    this.hud.updateDebug({ fps: this.stage.fps, jsMs: this.jsMs }, this.stage.stats);
   };
 
   /** Đổi vị trí chuột trên màn hình thành hướng ngắm trong thế giới. */
@@ -285,6 +294,11 @@ export class Game {
       this.audio.stopCharge();
       this.startRun();
       this.hud.toast('LÀM LẠI TỪ CHÂN THÁP');
+    }
+
+    if (this.input.wasPressed('DEBUG')) {
+      const on = this.hud.toggleDebug();
+      if (!on) this.hud.toast('ĐÃ TẮT BẢNG ĐO');
     }
 
     if (this.input.wasPressed('QUALITY')) {
