@@ -25,14 +25,21 @@
 // [1] WORLD — Kích thước và các mốc độ cao của toà tháp
 // ============================================================================
 export const WORLD = {
-  /** Nửa chiều rộng lòng tháp. Nhân vật chạy trong khoảng x ∈ [-34, 34]. */
-  HALF_WIDTH: 34,
+  /**
+   * Nửa chiều rộng lòng tháp: nhân vật chạy trong khoảng x ∈ [-24, 24].
+   * ⚠ Con số này bị RÀNG BUỘC với PLAYER.MAX_JUMP_SPEED: tầm bay ngang tối đa
+   *   của một cú nhảy full lực là v²/g = 58²/120 ≈ 28 đơn vị. Lòng tháp rộng
+   *   48 đơn vị nghĩa là một cú nhảy vắt ngang từ vách này sang vách kia vẫn
+   *   khả thi (nhưng phải full lực, đúng 45°). Nới rộng tháp mà quên tăng lực
+   *   nhảy sẽ làm map trở nên bất khả thi — validateLevel() sẽ báo lỗi.
+   */
+  HALF_WIDTH: 24,
 
   /** Độ dày tường biên hai bên (chỉ để vẽ, va chạm dùng HALF_WIDTH). */
   WALL_THICKNESS: 6,
 
   /** Chân tháp — nơi nhân vật hồi sinh khi bấm R. */
-  SPAWN: { x: -22, y: 6 },
+  SPAWN: { x: -15, y: 6 },
 
   /** Độ cao của Cỗ Máy Thời Gian. Chạm tới đây là thắng. */
   GOAL_Y: 1050,
@@ -69,9 +76,11 @@ export const PLAYER = {
 
   /**
    * Lực nhảy khi thanh lực đầy (power = 1).
-   * Nhảy thẳng đứng full lực đạt độ cao = 55² / (2·120) ≈ 12.6 đơn vị (~4 lần chiều cao robot).
+   *  • Nhảy thẳng đứng full lực: cao 58²/(2·120) ≈ 14.0 đơn vị (~4.4 lần chiều cao robot)
+   *  • Nhảy xa nhất (góc 45°):   xa 58²/120     ≈ 28.0 đơn vị
+   * ⚠ Tăng số này là làm cả map dễ đi rất nhiều. Xem ràng buộc ở WORLD.HALF_WIDTH.
    */
-  MAX_JUMP_SPEED: 55,
+  MAX_JUMP_SPEED: 58,
 
   /** Thời gian để thanh lực chạy từ 0 lên 1. Sau đó tự dao động ngược về 0 rồi lặp lại. */
   CHARGE_TIME: 0.85,
@@ -180,7 +189,7 @@ export const COLLISION = {
 // ============================================================================
 export const CAMERA = {
   /** Bề ngang thế giới luôn nhìn thấy được (đơn vị). Quyết định độ "zoom". */
-  VIEW_WIDTH: 78,
+  VIEW_WIDTH: 58,
   /** Chiều cao khung nhìn tối thiểu, tránh màn hình siêu rộng làm tháp bé tí. */
   MIN_VIEW_HEIGHT: 40,
 
