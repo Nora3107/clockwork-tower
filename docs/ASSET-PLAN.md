@@ -233,29 +233,77 @@ nguyên một lệnh vẽ cho mỗi tầng. Đọc `docs/ARCHITECTURE.md` phần
 
 ---
 
-## 8. TIEN DO — da chay xong
+## 8. TIEN DO — DA XONG TOAN BO 11 ASSET
 
-Toan bo chay bang **General Generation · GPT Image 2 Detailed · 1K**, 10 credit/anh.
+Chay bang **General Generation · GPT Image 2 Detailed · 1K**, 10 credit/anh.
 Anh goc nen trang nam trong `public/assets/_raw/` (khong commit, tai lai duoc);
 ban da tach nen nam thang trong `public/assets/`.
 
-| # | Tep | Noi dung | Credit |
-| --- | --- | --- | --- |
-| 1 | `robot-idle.png` | Robot dong ho, than dong tan rivet, mat kinh cyan, banh rang sau lung | 10 |
-| 2 | `menu-keyart.jpg` | Thap dong ho khong lo trong may hoang hon, chua san cho o trai de dat logo | 10 |
-| 3 | `tiles-zone1-forest.png` | 4 buc Rung Co Khi: canh cay dong am xanh, bu long, reu, day leo | 10 |
-| 4 | `tiles-zone2-ice.png` | 4 buc Ham Bang Gia: bang xanh nhat, tru bang, may moc sat tan rivet | 10 |
-| 5 | `tiles-zone3-core.png` | 4 buc Loi Thap: catwalk dong, ong hoi, soc canh bao cam den | 10 |
-| 6 | `tiles-special.png` | Bang chuyen · lo xo · buc nut vo · doc truot | 10 |
-| 7 | `goal-timemachine.png` | Co May Thoi Gian: vong vang khac cung hoang dao, loi pha le phat sang | 10 |
-| | | **Da dung** | **70** |
+| # | Tep | Noi dung |
+| --- | --- | --- |
+| 1 | `robot-idle.png` | Robot dung yen — than dong tan rivet, mat kinh cyan, banh rang sau lung |
+| 2 | `robot-charge.png` | Robot gong luc — nen thap, chan gap, tia lua duoi chan |
+| 3 | `robot-fly.png` | Robot bay — than keo dai, vet sang cyan, ang-ten bat nguoc gio |
+| 4 | `menu-keyart.jpg` | Thap dong ho trong may hoang hon, chua san nua trai de dat logo |
+| 5 | `tiles-zone1-forest.png` | 4 buc Rung Co Khi |
+| 6 | `tiles-zone2-ice.png` | 4 buc Ham Bang Gia |
+| 7 | `tiles-zone3-core.png` | 4 buc Loi Thap |
+| 8 | `tiles-special.png` | Bang chuyen · lo xo · buc nut vo · doc truot |
+| 9 | `goal-timemachine.png` | Co May Thoi Gian |
+| 10 | `ui-icons.png` | 8 icon HUD (luoi 4x2, giu nguyen khung 1792x1008 de cat theo toa do) |
+| 11 | `bg-gears.png` | 4 banh rang hau canh, toi va bac mau san cho lop parallax |
 
-Con lai trong ke hoach: bo icon UI, banh rang hau canh, robot tu the gong luc va bay.
+**Credit: dung 110 / 210. Con 100.**
 
-### Ghi chu ky thuat
+---
 
-- `menu-keyart` xuat JPEG chat luong 86 (2.3 MB → 254 KB) vi la anh nen day khung,
-  khong can kenh trong suot.
-- Cac tep con lai giu PNG vi **bat buoc** phai co kenh alpha.
-- Tong `public/assets/` hien ~9 MB. Truoc khi phat hanh phai nen lai va cat nho
-  tung manh buc ra khoi tam sheet — xem canh bao ve draw call o phan [7].
+## 9. LAM ANIMATION TU MOT TAM ANH — bon duong
+
+Cau hoi "mot tam anh thi lam animation kieu gi" co bon cau tra loi, xep theo
+thu tu nen dung cho game NAY:
+
+### 9.1. Bien hinh bang code — game DANG lam vay roi, va van la duong tot nhat
+
+`entities/PlayerView.js` khong he co animation theo khung hinh. Toan bo chuyen
+dong sinh ra tu phep bien hinh chay moi frame:
+
+| Hieu ung | Cach lam | O dau |
+| --- | --- | --- |
+| Nen nguoi khi gong luc | `scaleY` giam dan theo thanh luc, `scaleX = 1/scaleY` | PlayerView [5.2] |
+| Dan dai khi bay | `scaleY` tang theo toc do | PlayerView [5.2] |
+| Nghieng theo huong bay | `rotation.z = atan2(vy, vx)` | PlayerView [5.2] |
+| Mat liec theo chuot | doi vi tri con nguoi | PlayerView [5.3] |
+| Banh rang lung quay | `rotation.z += vx·dt` | PlayerView [5.4] |
+
+Doi sang sprite thi **giu nguyen toan bo co che nay**, chi thay khoi 3D bang
+mot tam anh phang. Squash & stretch chay tren sprite con da mat hon tren khoi
+3D — day chinh la ky thuat kinh dien cua hoat hinh 2D.
+
+### 9.2. Doi anh theo trang thai — 3 tam la du cho ca game
+
+Game chi co ba trang thai nhin thay duoc: dung / gong luc / bay. Ba tam anh o
+muc 1-3 phu kin. Doi tam theo `player.charging` va `player.grounded`, roi de
+phep bien hinh o 9.1 lam phan con lai. **Khong ton them credit nao.**
+
+### 9.3. Animation Agent cua Meowa — 40 credit / 8 khung hinh
+
+Co that va dung duoc: che do **Frame Animation NEW → HD Style**, nap mot anh
+tham chieu, chon san IDLE / WALK / RUN / JUMP / ATTACK / HIT / DEFEATED, do dai
+8 khung. Cho ra sprite sheet.
+
+Nhung voi game nay thi **khong dang**: 40 credit cho mot chuoi, ma nhan vat
+chi dung yen chu khong di bo — chuoi WALK/RUN vo dung. Con JUMP thi 9.1 da lam
+tot hon roi vi no bam sat van toc that thay vi phat lai mot chuoi co dinh.
+
+Danh cho luc muon them chuoi rieng: nhan vat mung chien thang tren dinh thap,
+hoac chuoi "tan ra" khi roi tu rat cao.
+
+### 9.4. Cat roi tung bo phan roi ghep xuong khop bang code
+
+Cat sprite thanh than / mu / chan / banh rang, moi manh mot mesh con, roi xoay
+tung manh theo code. Mem deo nhat nhung cung ton cong nhat, va **pha vo thanh
+qua toi uu draw call** (moi manh la mot lenh ve). Chi lam neu 9.1 + 9.2 khong du.
+
+> **De xuat:** di duong 9.1 + 9.2 — dung ba tam da co, animation van do code
+> sinh ra. Khong ton them credit, khong pha hieu nang, va bam sat vat ly hon
+> bat ky sprite sheet nao.
