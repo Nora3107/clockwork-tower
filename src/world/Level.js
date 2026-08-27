@@ -47,6 +47,10 @@ import { WORLD, ZONES, PLATFORM_COLORS, DEV } from '../core/Config.js';
 import { createPlatform, updatePlatform, PlatformType } from '../physics/Platform.js';
 import { buildLevelData, validateLevel } from './LevelData.js';
 import { coloredBox, coloredSolid, mergeAll, vertexColorMaterial } from '../render/MergeUtils.js';
+import { spriteMaterial, planeFor } from '../render/Textures.js';
+
+/** Ảnh Cỗ Máy Thời Gian trên đỉnh tháp. */
+const GOAL_TEXTURE = '/assets/goal-timemachine.png';
 
 /** Độ dày của bục theo trục Z — thứ tạo ra cảm giác 2.5D có khối. */
 const DEPTH = 9;
@@ -260,31 +264,17 @@ export class Level {
   buildTimeMachine() {
     const g = new THREE.Group();
 
-    this.ring = new THREE.Mesh(
-      new THREE.TorusGeometry(7, 1.1, 8, 24),
-      new THREE.MeshLambertMaterial({ color: 0xffd85e, emissive: 0x8a6a12 }),
+    // Trước đây bộ phận này được nặn bằng hình học: vòng xuyến + lõi 20 mặt +
+    // ba cây kim. Nay là MỘT tấm phẳng dán ảnh đã vẽ sẵn — một lệnh vẽ, và
+    // chi tiết thì gấp nhiều lần thứ dựng được bằng hình khối cơ bản.
+    const H = 26;
+    this.machine = new THREE.Mesh(
+      planeFor(GOAL_TEXTURE, H),
+      spriteMaterial(GOAL_TEXTURE, { lit: false, soft: true }),
     );
-    this.ring.castShadow = true;
-    g.add(this.ring);
+    g.add(this.machine);
 
-    this.core = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(3.2, 0),
-      new THREE.MeshLambertMaterial({ color: 0xfff3b0, emissive: 0xffb457 }),
-    );
-    g.add(this.core);
-
-    // Ba kim đồng hồ bất động — thời gian của thế giới đang đóng băng.
-    // Gộp luôn thành một khối, không cần ba mesh cho ba cái kim.
-    const hands = [];
-    for (let i = 0; i < 3; i++) {
-      const hand = new THREE.BoxGeometry(5.5, 0.5, 0.5);
-      hand.translate(2.4, 0, 0);
-      hand.rotateZ((i / 3) * Math.PI * 2);
-      hands.push(coloredSolid(hand, 0xffe9a8));
-    }
-    g.add(new THREE.Mesh(mergeAll(hands), vertexColorMaterial()));
-
-    g.position.set(0, WORLD.GOAL_Y + 9, PLANE_Z - 1);
+    g.position.set(0, WORLD.GOAL_Y + 11, PLANE_Z - 1);
     this.group.add(g);
     this.timeMachine = g;
 
@@ -318,11 +308,13 @@ export class Level {
       p.mesh.position.y = p.y + (p.shakeOffset || 0);
       p.mesh.visible = p.state !== 'gone';
     }
-    // Cỗ Máy Thời Gian đang "thở" chờ được khởi động lại.
+    // Cỗ Máy Thời Gian đang "thở" chờ được khởi động lại: trôi lên xuống nhẹ
+    // và phập phồng độ sáng, đủ để nó trông còn sống chứ không phải hình dán.
     if (this.timeMachine) {
-      this.ring.rotation.z += 0.004;
-      this.core.rotation.y += 0.01;
-      this.timeMachine.position.y = WORLD.GOAL_Y + 9 + Math.sin(this.time * 1.4) * 0.6;
+      this.timeMachine.position.y = WORLD.GOAL_Y + 11 + Math.sin(this.time * 1.4) * 0.7;
+      const pulse = 0.88 + Math.sin(this.time * 2.1) * 0.12;
+      this.machine.material.opacity = pulse;
+      this.machine.rotation.z = Math.sin(this.time * 0.35) * 0.04;
     }
   }
 
