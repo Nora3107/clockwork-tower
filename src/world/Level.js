@@ -46,7 +46,12 @@ import * as THREE from 'three';
 import { WORLD, ZONES, PLATFORM_COLORS, DEV } from '../core/Config.js';
 import { createPlatform, updatePlatform, PlatformType } from '../physics/Platform.js';
 import { buildLevelData, validateLevel } from './LevelData.js';
-import { coloredBox, coloredSolid, mergeAll, vertexColorMaterial } from '../render/MergeUtils.js';
+import {
+  coloredBox, coloredSolid, mergeAll, vertexColorMaterial,
+  texturedBox, mergeAllTextured, remapUV,
+} from '../render/MergeUtils.js';
+import { ATLAS_URL, WHITE, pickTile } from './TileAtlas.js';
+import { texture } from '../render/Textures.js';
 import { spriteMaterial, planeFor } from '../render/Textures.js';
 
 /** Ảnh Cỗ Máy Thời Gian trên đỉnh tháp. */
@@ -129,6 +134,32 @@ export class Level {
     return { side: z.platform, top: z.platformTop };
   }
 
+  /**
+   * Chọn ô ảnh trong atlas cho một cái bục.
+   *
+   * Hai tầng quyết định:
+   *   1. LOẠI bục thắng trước — băng chuyền, lò xo, bục nứt có ảnh riêng, vì
+   *      người chơi phải nhận ra chúng ngay lập tức dù đang ở vùng nào.
+   *   2. Còn lại thì theo VÙNG SINH THÁI.
+   *
+   * Trong mỗi nhóm có 4 mảnh dài ngắn khác nhau; `pickTile` chọn mảnh có tỉ lệ
+   * gần nhất với tỉ lệ thật của cái bục, nhờ vậy ảnh ít bị kéo méo nhất.
+   */
+  tileFor(p) {
+    const ratio = p.w / p.h;
+    switch (p.type) {
+      case PlatformType.MOVING: return pickTile('special-1', ratio);
+      case PlatformType.BOUNCY: return pickTile('special-2', ratio);
+      case PlatformType.FALLING: return pickTile('special-3', ratio);
+      case PlatformType.ICE: return pickTile('zone2-ice', ratio);
+      default: break;
+    }
+    const id = p.zone ? p.zone.id : 'forest';
+    if (id === 'ice') return pickTile('zone2-ice', ratio);
+    if (id === 'core' || id === 'summit') return pickTile('zone3-core', ratio);
+    return pickTile('zone1-forest', ratio);
+  }
+
   // ==========================================================================
   // [3] HÌNH HỌC BỤC TĨNH — gom vào giỏ theo tầng
   // ----------------------------------------------------------------------------
@@ -137,7 +168,12 @@ export class Level {
   // ==========================================================================
   addStaticBox(p) {
     const c = this.colorsFor(p);
-    const geo = coloredBox(p.w, p.h, DEPTH, c.top, c.side);
+    const tile = this.tileFor(p);
+    // Màu mặt trên lấy thẳng từ mép trên của chính tấm ảnh (atlas.py tính sẵn),
+    // nên đổi ảnh là màu tự khớp theo, không phải chỉnh tay.
+    const geo = texturedBox(p.w, p.h, DEPTH, {
+      front: tile, white: WHITE, sideColor: c.side, topColor: tile.top ?? c.top,
+    });
     geo.translate(p.x, p.y, PLANE_Z);
     this.pushChunk(p.y, geo);
     p.mesh = null;      // không có mesh riêng: đã nằm trong khối gộp của tầng
@@ -166,7 +202,7 @@ export class Level {
 
     const geo = new THREE.ExtrudeGeometry(shape, { depth: DEPTH, bevelEnabled: false });
     geo.translate(0, 0, PLANE_Z - DEPTH / 2);
-    this.pushChunk(p.y2, coloredSolid(geo, PLATFORM_COLORS.slope.top));
+    this.pushChunk(p.y2, remapUV(coloredSolid(geo, PLATFORM_COLORS.slope.top), WHITE));
     p.mesh = null;
 
     // Sọc cảnh báo chạy dọc mép dốc — báo cho người chơi "chỗ này trượt".
@@ -192,7 +228,7 @@ export class Level {
     for (const sign of [-1, 1]) {
       sliceByChunk(-20, height - 20, (y0, y1) => {
         const h = y1 - y0;
-        const geo = coloredBox(t, h, DEPTH + 10, 0x333944, 0x2a2f38);
+        const geo = remapUV(coloredBox(t, h, DEPTH + 10, 0x333944, 0x2a2f38), WHITE);
         geo.translate(sign * (WORLD.HALF_WIDTH + t / 2), y0 + h / 2, PLANE_Z - 2);
         this.pushChunk(y0 + h / 2, geo);
       });
@@ -203,7 +239,7 @@ export class Level {
     for (const z of ZONES) {
       sliceByChunk(z.yMin, z.yMax, (y0, y1) => {
         const h = y1 - y0;
-        const geo = coloredBox(WORLD.HALF_WIDTH * 2 + t * 2, h, 2, z.sky, z.sky);
+        const geo = remapUV(coloredBox(WORLD.HALF_WIDTH * 2 + t * 2, h, 2, z.sky, z.sky), WHITE);
         geo.translate(0, y0 + h / 2, PLANE_Z - DEPTH / 2 - 8);
         this.pushChunk(y0 + h / 2, geo);
       });
@@ -215,10 +251,13 @@ export class Level {
   // ==========================================================================
   flushChunks() {
     this.chunkMeshes = [];
-    const material = vertexColorMaterial();
+    // MỘT vật liệu cho toàn bộ tháp: atlas + màu từng đỉnh.
+    // three.js nhân hai thứ này với nhau, nhờ đó mặt có ảnh và mặt màu trơn
+    // dùng chung được một vật liệu (xem MergeUtils phần [4]).
+    const material = vertexColorMaterial({ map: texture(ATLAS_URL) });
 
     for (const [idx, geos] of this._chunks) {
-      const mesh = new THREE.Mesh(mergeAll(geos), material);
+      const mesh = new THREE.Mesh(mergeAllTextured(geos), material);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       mesh.name = `chunk-${idx}`;
@@ -249,8 +288,16 @@ export class Level {
     //   12 khi tính cả lượt dựng bóng đổ. Chỉ 8 bục trong khung hình đã ngốn
     //   gần 100 lệnh vẽ.
     //   Cách đúng: nhét màu vào từng đỉnh, dùng CHUNG một vật liệu → 1 lệnh vẽ.
-    if (!this._dynMaterial) this._dynMaterial = vertexColorMaterial();
-    const mesh = new THREE.Mesh(coloredBox(p.w, p.h, DEPTH, c.top, c.side), this._dynMaterial);
+    if (!this._dynMaterial) {
+      this._dynMaterial = vertexColorMaterial({ map: texture(ATLAS_URL) });
+    }
+    const tile = this.tileFor(p);
+    const mesh = new THREE.Mesh(
+      texturedBox(p.w, p.h, DEPTH, {
+        front: tile, white: WHITE, sideColor: c.side, topColor: tile.top ?? c.top,
+      }),
+      this._dynMaterial,
+    );
     mesh.position.set(p.x, p.y, PLANE_Z);
     mesh.castShadow = true;
     mesh.receiveShadow = true;

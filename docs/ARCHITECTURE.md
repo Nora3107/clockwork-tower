@@ -114,6 +114,40 @@ Kết quả: 50 mesh, 18–35 lệnh vẽ tuỳ độ cao.
 **Quy tắc khi thêm thứ mới vào cảnh:** nếu nó không tự cử động → gộp vào khối tĩnh
 của tầng. Nếu nó cử động → mesh riêng, nhưng phải dùng **một** vật liệu duy nhất.
 
+### Dán ảnh mà vẫn giữ được một lệnh vẽ
+
+Ảnh làm mọi thứ khó lên một bậc, vì **mỗi tấm ảnh là một vật liệu, và mỗi vật liệu
+là một lệnh vẽ**. Ba vùng sinh thái dùng ba tấm ảnh riêng là khối gộp theo tầng bị
+xé làm ba ngay.
+
+Cách giải quyết gồm ba mảnh ghép:
+
+1. **Một atlas duy nhất** (`scripts/atlas.py` → `public/assets/tiles-atlas.png`).
+   Cả 16 mảnh bục của 3 vùng + 4 bục đặc biệt nằm chung một tấm 1024×2048.
+   Bảng toạ độ UV được sinh ra thành `src/world/TileAtlas.js`.
+
+2. **Ô trắng trong atlas.** Mặt sau, mặt đáy, hai mặt bên và mặt trên của bục chỉ
+   cần màu trơn. Chúng trỏ UV vào một ô trắng tinh, còn màu thật lấy từ *màu từng
+   đỉnh*. Vật liệu bật cả `map` lẫn `vertexColors`, three.js nhân hai thứ:
+   `trắng × màu đỉnh = màu đỉnh`, `màu trắng × ảnh = ảnh`. Một vật liệu lo cả hai.
+
+3. **Cắt lấy dải đặc của ảnh.** Ảnh bục có nền trong suốt và những phần thò ra
+   (trụ băng, dây leo). Hộp va chạm thì là chữ nhật đặc. Dán ảnh có lỗ thủng lên
+   mặt trước hộp thì nhìn xuyên qua lỗ sẽ thấy mặt sau của chính cái hộp. Nên
+   `atlas.py` chỉ lấy dải các hàng ngang gần như đục hoàn toàn.
+
+**Hai điều đã thử và phải bỏ:**
+
+- *Dán ảnh lên mặt trên bục.* Mặt trên có tỉ lệ rộng/sâu ~1.3:1 còn dải ảnh bề mặt
+  thì ~20:1 — nhét vào là kéo dãn thành vệt dọc nhoè. Quan trọng hơn: mặt trên là
+  thứ người chơi liếc để biết chỗ đứng được, **màu trơn sắc nét đọc nhanh hơn ảnh
+  chi tiết**. Màu đó nay lấy tự động từ mép trên của chính tấm ảnh (`atlas.py` tính
+  sẵn), kèm sàn độ sáng tối thiểu 0.5 để mặt bục kim loại tối màu ở Vùng 3 không
+  chìm vào nền.
+- *Trải ảnh khít mọi bề rộng bục.* Bục rộng từ 4.5 tới 48 đơn vị. Thay vì cắt 9 mảnh
+  (9-slice), mỗi vùng có sẵn 4 mảnh dài ngắn khác nhau và `pickTile()` chọn mảnh có
+  tỉ lệ gần nhất — rẻ hơn nhiều mà méo không đáng kể.
+
 ## 7. Ba cái bẫy hình học của Phễu Tử Thần (đọc trước khi sửa map quanh phễu)
 
 Phễu chỉ hoạt động khi ba điều kiện dưới đây cùng đúng. `validateLevel()` kiểm
