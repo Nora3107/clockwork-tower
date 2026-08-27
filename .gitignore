@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Anh goc nen trang tu Meowa (tai lai duoc) - chi giu ban da tach nen
+public/assets/_raw/

@@ -8,19 +8,19 @@
 
 ## 0. Trước khi bắt đầu — ba điều phải biết
 
-### 0.1. Công cụ có hai thế giới tách biệt
+### 0.1. Chon dung agent — cap nhat sau khi da chay thuc te
 
-| Agent | Cho ra | Giá | Dùng cho |
+| Agent | Cho ra | Gia | Ket luan |
 | --- | --- | --- | --- |
-| **HD Art** | Ảnh HD 256px / 1024px, tách nền sẵn | **15 credit**/lần | ✅ Thứ chúng ta cần |
-| Pixel Art | Sprite pixel 32–128px | 20–25 credit/lần | ❌ Sai hướng với "HD style" |
+| **General Generation** | Anh HD tu do, 1K/2K, moi ty le khung | **10 credit** (model Detailed) | ✅ **Dung cai nay.** Khong bi mau ap phong cach, re nhat, chat luong tot nhat trong ba. |
+| HD Art | 1024px, tach nen san | 15 credit | Chi hon o cho tach nen — ma viec do `scripts/cutout.py` lam mien phi tai may. |
+| Map Editor (Side + HD) | Lop hau canh parallax HD | 20 credit/lop | Danh cho hau canh nhieu lop. Co san prefab "Steampunk Gear Factory" va "Clockwork Sky City". |
+| Pixel Art | Sprite pixel 32–128px | 20–25 credit | ❌ Sai huong voi "HD style". La agent mac dinh — de chon nham. |
 
-**Luôn chọn agent `HD Art`** ở góc trái bảng cài đặt. Mặc định công cụ mở ở
-`Pixel Art` — chọn nhầm là mất credit cho ra ảnh pixel.
-
-Mẫu dựng sẵn của HD Art (`Ancient Minimal Icons`, `Ink-Wash Icons`, `Warm Healing
-Watercolor Character`…) **không có cái nào là steampunk**. Phong cách hoàn toàn
-do prompt quyết định, nên phần [1] dưới đây quan trọng hơn việc chọn mẫu.
+> Ke hoach ban dau dinh dung HD Art. Sau khi chay thu thi **General Generation**
+> vua re hon vua tu do hon: cac mau 1024px cua HD Art deu ap san phong cach
+> (watercolor / chibi / ink-wash), lan at tong steampunk.
+> Nen tach nen bang `scripts/cutout.py` thay vi tra them credit cho HD Art.
 
 ### 0.2. Game hiện KHÔNG có đường ống ảnh
 
@@ -229,3 +229,33 @@ lệnh vẽ**. Nếu ba vùng dùng ba ảnh riêng thì khối gộp theo tần
 Cách đúng: ghép cả ba bộ bục vào **một tấm atlas duy nhất** rồi trỏ UV — giữ
 nguyên một lệnh vẽ cho mỗi tầng. Đọc `docs/ARCHITECTURE.md` phần [6] trước khi
 động vào.
+
+
+---
+
+## 8. TIEN DO — da chay xong
+
+Toan bo chay bang **General Generation · GPT Image 2 Detailed · 1K**, 10 credit/anh.
+Anh goc nen trang nam trong `public/assets/_raw/` (khong commit, tai lai duoc);
+ban da tach nen nam thang trong `public/assets/`.
+
+| # | Tep | Noi dung | Credit |
+| --- | --- | --- | --- |
+| 1 | `robot-idle.png` | Robot dong ho, than dong tan rivet, mat kinh cyan, banh rang sau lung | 10 |
+| 2 | `menu-keyart.jpg` | Thap dong ho khong lo trong may hoang hon, chua san cho o trai de dat logo | 10 |
+| 3 | `tiles-zone1-forest.png` | 4 buc Rung Co Khi: canh cay dong am xanh, bu long, reu, day leo | 10 |
+| 4 | `tiles-zone2-ice.png` | 4 buc Ham Bang Gia: bang xanh nhat, tru bang, may moc sat tan rivet | 10 |
+| 5 | `tiles-zone3-core.png` | 4 buc Loi Thap: catwalk dong, ong hoi, soc canh bao cam den | 10 |
+| 6 | `tiles-special.png` | Bang chuyen · lo xo · buc nut vo · doc truot | 10 |
+| 7 | `goal-timemachine.png` | Co May Thoi Gian: vong vang khac cung hoang dao, loi pha le phat sang | 10 |
+| | | **Da dung** | **70** |
+
+Con lai trong ke hoach: bo icon UI, banh rang hau canh, robot tu the gong luc va bay.
+
+### Ghi chu ky thuat
+
+- `menu-keyart` xuat JPEG chat luong 86 (2.3 MB → 254 KB) vi la anh nen day khung,
+  khong can kenh trong suot.
+- Cac tep con lai giu PNG vi **bat buoc** phai co kenh alpha.
+- Tong `public/assets/` hien ~9 MB. Truoc khi phat hanh phai nen lai va cat nho
+  tung manh buc ra khoi tam sheet — xem canh bao ve draw call o phan [7].
