@@ -34,8 +34,14 @@ export class HUD {
       <!-- Góc trên trái: đồng hồ speedrun + kỷ lục + độ cao -->
       <div class="hud-panel hud-topleft">
         <div class="hud-timer" id="hud-timer">00:00.000</div>
-        <div class="hud-row"><span class="hud-label">KỶ LỤC</span><span id="hud-best">--:--.---</span></div>
-        <div class="hud-row"><span class="hud-label">ĐỘ CAO</span><span id="hud-height">0 m</span></div>
+        <div class="hud-row">
+          <span class="hud-label"><img class="hud-icon" src="/assets/icons/record.png" alt="">KỶ LỤC</span>
+          <span id="hud-best">--:--.---</span>
+        </div>
+        <div class="hud-row">
+          <span class="hud-label"><img class="hud-icon" src="/assets/icons/height.png" alt="">ĐỘ CAO</span>
+          <span id="hud-height">0 m</span>
+        </div>
         <div class="hud-row"><span class="hud-label">FPS</span><span id="hud-fps">--</span></div>
       </div>
 
@@ -49,14 +55,16 @@ export class HUD {
       <div class="hud-bottom">
         <div class="hud-skills">
           <div class="hud-skill" id="hud-skill-dash">
+            <img class="hud-skill-icon" src="/assets/icons/dash.png" alt="Lướt">
             <div class="hud-skill-cd" id="hud-skill-dash-cd"></div>
-            <span class="hud-skill-key">E</span>
             <span class="hud-skill-name">LƯỚT</span>
+            <span class="hud-skill-key">E</span>
           </div>
           <div class="hud-skill" id="hud-skill-brake">
+            <img class="hud-skill-icon" src="/assets/icons/brake.png" alt="Phanh">
             <div class="hud-skill-cd" id="hud-skill-brake-cd"></div>
-            <span class="hud-skill-key">Q</span>
             <span class="hud-skill-name">PHANH</span>
+            <span class="hud-skill-key">Q</span>
           </div>
         </div>
         <div class="hud-power">
@@ -187,7 +195,7 @@ export class HUD {
     // --- Cờ trạng thái: God Mode / tắt tiếng -------------------------------
     const flags = [];
     if (p.godMode) flags.push('<span class="hud-flag is-god">GOD MODE</span>');
-    if (this.muted) flags.push('<span class="hud-flag">🔇</span>');
+    if (this.muted) flags.push('<span class="hud-flag"><img class="hud-icon" src="/assets/icons/sound-off.png" alt="Tắt tiếng" style="margin:0;vertical-align:-2px"></span>');
     const html = flags.join('');
     if (html !== this._lastFlags) { this.flagsEl.innerHTML = html; this._lastFlags = html; }
 
