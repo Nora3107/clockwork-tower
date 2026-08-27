@@ -307,3 +307,45 @@ qua toi uu draw call** (moi manh la mot lenh ve). Chi lam neu 9.1 + 9.2 khong du
 > **De xuat:** di duong 9.1 + 9.2 — dung ba tam da co, animation van do code
 > sinh ra. Khong ton them credit, khong pha hieu nang, va bam sat vat ly hon
 > bat ky sprite sheet nao.
+
+
+---
+
+## 10. DA LAP VAO GAME
+
+| Asset | Trang thai | Cach lap |
+| --- | --- | --- |
+| `menu-keyart.jpg` | ✅ | Nen man hinh menu, dat `center right` de giu thap ben phai |
+| 8 icon HUD | ✅ | Cat roi, thu ve 128px, gan vao o ky nang va bang goc trai |
+| `bg-gears/gear-a` | ✅ | 16 banh rang parallax deu dung chung mot anh nay |
+| `goal-timemachine` | ✅ | Sprite thay cho nhom mesh vong xuyen + loi + kim |
+| 12 manh buc 3 vung | ✅ | Gop vao atlas, dan len MAT TRUOC hop |
+| 4 buc dac biet | ✅ | Bang chuyen / lo xo / buc nut deu co anh rieng |
+| 3 tu the robot | ⏳ | Chua lap — xem ghi chu duoi |
+
+### Vi sao chua lap sprite robot
+
+Doi robot sang sprite la thay doi nang nhat va **it loi nhat**:
+- `PlayerView.js` hien sinh toan bo chuyen dong bang phep bien hinh (nen khi
+  gong luc, dan khi bay, nghieng theo van toc, mat liec theo chuot). Doi sang
+  sprite phai lam lai het tung thu do.
+- Ba tam anh khong khop nhau tuyet doi (moi lan tao la model ve lai tu dau),
+  nen doi qua lai giua chung se thay giat.
+- Khoi robot 3D hien tai chi ton 4 mesh va an nhip rat tot voi anh sang canh.
+
+De xuat: giu khoi 3D, dung ba tam anh lam anh minh hoa cho man hinh menu va
+man hinh vinh danh. Neu van muon doi thi phai tao lai ba tu the bang
+Universal Edit tu chinh `robot-idle` de chung khop nhau.
+
+### Dung luong
+
+| | Truoc don | Sau don |
+| --- | --- | --- |
+| Trong git | 22.8 MB | 5.0 MB |
+| Game thuc su tai luc chay | — | ~2.9 MB |
+
+Cach don: tam sheet lon va anh goc nen trang deu la buoc trung gian, tai tao
+lai duoc bang `cutout.py` + `slice.py` nen day het vao `_raw/` (da gitignore).
+Anh con lai thu ve dung co hien thi that — robot cao 3.2 don vi tren man hinh
+chi khoang 58 diem anh, giu ban 905 diem anh la tra tien bang dung luong tai
+trang ma mat khong thay khac gi.
